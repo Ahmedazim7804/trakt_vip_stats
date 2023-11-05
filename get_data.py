@@ -4,12 +4,10 @@ from sqlitedict import SqliteDict
 import json
 from movies_model import Movie, MovieGetData, Cast, Studio, Crew
 from shows_model import TV, GetTvData, Network
+from episode_model import Episode, GetEpisode
 from sqlmodel import SQLModel, create_engine, Session, select
 
 from tmdbv3api import TMDb
-from tmdbv3api import Season
-from tmdbv3api import Episode
-from tmdbv3api.exceptions import TMDbException
 
 tmdb = TMDb()
 tmdb.api_key = '***REMOVED***'
@@ -48,7 +46,7 @@ def get_movies():
 
                 rating = item['rating'] if 'rating' in item.keys() else 0 #FIXME:
 
-                plays = 1
+                plays = 1 #TODO: make plays=1 default in model.
 
                 countries = MovieGetData.get_countries(tmdb_id=tmdb_id)
                 poster = MovieGetData.get_poster(tmdb_id=tmdb_id)
@@ -88,12 +86,20 @@ def get_movies():
                     session.add(movie)
 
                     for person in cast:
-                        if not session.exec(select(Cast).where(Cast.id == person.id)).first():
+                        existed_person = session.exec(select(Cast).where(Cast.id == person.id)).first()
+                        if not existed_person:
+                            person.add_movie(tmdb_id)
                             session.add(person)
+                        else:
+                            existed_person.add_movie(tmdb_id)
                     
                     for person in crew:
-                        if not session.exec(select(Crew).where(Crew.id == person.id)).first():
+                        existed_person = session.exec(select(Cast).where(Cast.id == person.id)).first()
+                        if not existed_person:
+                            person.add_movie(tmdb_id)
                             session.add(person)
+                        else:
+                            existed_person.add_movie(tmdb_id)
 
                     for studio in studios:
                         existed_studio = session.exec(select(Studio).where(Studio.id == studio.id)).first()
@@ -175,5 +181,74 @@ def get_tv():
                     
                     session.commit()
 
+
+def get_episode():
+    file = open('data.json', 'r')
+    data = json.load(file)
+    file.close()
+
+    engine = create_engine("sqlite:///database.db")
+    SQLModel.metadata.create_all(engine)
+            
+    for item in data['history'][15:20]:
+        if item['type'] == 'episode':
+
+            watched_id = str(item['id'])
+
+            tmdb_id = item['episode']['ids']['tmdb']
+            tmdb_show_id = item['show']['ids']['tmdb']
+            show_title = item['show']['title']
+            season = item['episode']['season']
+            episode = item['episode']['number']
+            episode_title = item['episode']['title']
+            runtime = GetEpisode.runtime(tmdb_show_id, season, episode)
+            
+            cast = GetEpisode.cast(tmdb_show_id, season, episode)
+            cast_ids = [person.id for person in cast]
+
+            crew = GetEpisode.crew(tmdb_show_id, season, episode)
+            crew_ids = [person.id for person in crew]
+            rating = 0 #FIXME:
+
+            episode = Episode(
+                tmdb_id=tmdb_id,
+                tmdb_show_id=tmdb_show_id,
+                show_title=show_title,
+                season=season,
+                episode=episode,
+                episode_title=episode_title,
+                watched_at=[watched_id],
+                runtime=runtime,
+                cast=cast_ids,
+                crew=crew_ids
+            )
+
+            with Session(engine) as session:
+                session.add(episode)
+
+                for person in cast:
+                    existed_person = session.exec(select(Cast).where(Cast.id == person.id)).first()
+                    if not existed_person:
+                        person.add_show(tmdb_show_id)
+                        person.add_episode()
+                        session.add(person)
+                    else:
+                        existed_person.add_show(tmdb_show_id)
+                        existed_person.add_episode()
+                        session.add(existed_person)
+                    
+                    
+                for person in crew:
+                    existed_person = session.exec(select(Crew).where(Crew.id == person.id)).first()
+                    if not existed_person:
+                        person.add_show(tmdb_show_id)
+                        person.add_episode()
+                        session.add(person)
+                    else:
+                        existed_person.add_show(tmdb_show_id)
+                        existed_person.add_episode()
+                        session.add(existed_person)
+            
+                session.commit()
 
 get_tv()

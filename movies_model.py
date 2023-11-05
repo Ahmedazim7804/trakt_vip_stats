@@ -18,14 +18,24 @@ class Cast(SQLModel, table=True, arbitrary_types_allowed=True):
     name : Optional[str]
     gender : Optional[str]
     image: Optional[str]
+    episode : int = Field(default=0)
+    shows : List[int] = Field(sa_column=Column(JSON), default=[])
+    shows_count : int = Field(default = 0)
+    movies : List[int] = Field(sa_column=Column(JSON), default=[])
+    movies_count : int = Field(default=0)
 
+    def add_show(my, show):
+        if show not in my.shows:
+            my.shows = [*my.shows, show]
+            my.shows_count = my.shows_count + 1
+    
+    def add_episode(my):
+        my.episode = my.episode + 1
 
-class Studio(SQLModel, table=True, arbitrary_types_allowed=True):
-    id : int = Field(primary_key=True)
-    name : Optional[str]
-    country: Optional[str]
-    movies: int = Field(default=1)
-    image: Optional[str]
+    def add_movie(my, movie):
+        if movie not in my.movies:
+            my.movies = [*my.movies, movie]
+            my.movies_count = my.movies_count + 1
 
 
 class Crew(SQLModel, table=True, arbitrary_types_allowed=True):
@@ -34,6 +44,32 @@ class Crew(SQLModel, table=True, arbitrary_types_allowed=True):
     dept: str
     job : Optional[str]
     image : Optional[str]
+    episode : int = Field(default=0)
+    shows : List[int] = Field(sa_column=Column(JSON), default=[])
+    shows_count : int = Field(default=0)
+    movies : List[int] = Field(sa_column=Column(JSON), default=[])
+    movies_count : int = Field(default=0)
+
+    def add_show(my,show):
+        if show not in my.shows:
+            my.shows = [*my.shows, show]
+            my.shows_count = my.shows_count + 1
+    
+    def add_episode(my):
+        my.episode = my.episode + 1
+
+    def add_movie(my, movie):
+        if movie not in my.movies:
+            my.movies = [*my.movies, movie]
+            my.movies_count = my.movies_count + 1
+
+
+class Studio(SQLModel, table=True, arbitrary_types_allowed=True):
+    id : int = Field(primary_key=True)
+    name : Optional[str]
+    country: Optional[str]
+    movies: int = Field(default=1)
+    image: Optional[str]
 
 
 class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True):
