@@ -15,6 +15,7 @@ TMDbTV = tmdbv3api.TV()
 class Network(SQLModel, table=True, arbitrary_types_allowed=True):
     id : int = Field(primary_key=True)
     name: str
+    shows: int = Field(default=1)
     image: Optional[str]
 
 
@@ -26,7 +27,7 @@ class TV(SQLModel, table=True, arbitrary_types_allowed=True):
     rating: int #FIXME:
     poster: str
     networks: List[int] = Field(sa_column=Column(JSON))
-    genres: List[int] = Field(sa_column=Column(JSON))
+    genres: List[str] = Field(sa_column=Column(JSON))
     countries: List[str] = Field(sa_column=Column(JSON))
 
 class GetTvData:

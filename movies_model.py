@@ -24,6 +24,7 @@ class Studio(SQLModel, table=True, arbitrary_types_allowed=True):
     id : int = Field(primary_key=True)
     name : Optional[str]
     country: Optional[str]
+    movies: int = Field(default=1)
     image: Optional[str]
 
 

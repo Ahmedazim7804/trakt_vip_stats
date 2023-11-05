@@ -96,8 +96,11 @@ def get_movies():
                             session.add(person)
 
                     for studio in studios:
-                        if not session.exec(select(Studio).where(Studio.id == studio.id)).first():
+                        existed_studio = session.exec(select(Studio).where(Studio.id == studio.id)).first()
+                        if not existed_studio:
                             session.add(studio)
+                        else:
+                            existed_studio.movies = existed_studio.movies + 1
 
                     session.commit()
 
@@ -164,8 +167,11 @@ def get_tv():
                     session.add(show)
                     
                     for network in networks:
-                        if not session.exec(select(Network).where(Network.id == network.id)).first():
+                        existed_network = session.exec(select(Network).where(Network.id == network.id)).first()
+                        if not existed_network:
                             session.add(network)
+                        else:
+                            existed_network.shows = existed_network.shows + 1
                     
                     session.commit()
 
