@@ -1,16 +1,10 @@
-from sqlmodel import SQLModel, Field, ARRAY, Column, JSON, ForeignKey, Relationship
+from sqlmodel import SQLModel, Field, Column, JSON
 from typing import List, Optional
-from tmdbv3api import TV
 from tmdbv3api import TMDb
 import tmdbv3api
-from tmdbv3api import Season
-from tmdbv3api import Episode
 from operator import itemgetter
-import json
 from tmdbv3api.exceptions import TMDbException
 from loguru import logger
-from pydantic import BaseModel
-from sqlalchemy.orm import Mapped
 
 
 tmdb = TMDb()
@@ -79,7 +73,6 @@ class MovieGetData:
 
         except TMDbException:
             logger.warning(f"TMDb Movie Id : '{tmdb_id}' failed to get Genres")
-            return genres
 
         if not genres:
             logger.debug(f"TMDb Movie Id : '{tmdb_id}' Genres are empty")

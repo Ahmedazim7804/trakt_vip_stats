@@ -3,9 +3,9 @@ from trakt.core import CORE, BASE_URL
 from sqlitedict import SqliteDict
 import json
 from movies_model import Movie, MovieGetData, Cast, Studio, Crew
+from shows_model import TV, GetTvData, Network
 from sqlmodel import SQLModel, create_engine, Session, select
 
-from tmdbv3api import TV
 from tmdbv3api import TMDb
 from tmdbv3api import Season
 from tmdbv3api import Episode
@@ -29,10 +29,8 @@ def get_movies():
     engine = create_engine("sqlite:///database.db")
     SQLModel.metadata.create_all(engine)
             
-    for item in data['history'][0:200]:
+    for item in data['history'][0:20]:
         if item['type'] == 'movie':
-
-            MovieGetData.get_genres(item['movie']['ids']['tmdb'])
 
             watched_id = str(item['id']) # Unique Watched id, unique for any item
             trakt_id = item['movie']['ids']['trakt'] # Unique movie trakt id
@@ -48,7 +46,7 @@ def get_movies():
                 watched_ids = [watched_id]
                 watched_at = item['watched_at']
 
-                rating = item['rating'] if 'rating' in item.keys() else 0
+                rating = item['rating'] if 'rating' in item.keys() else 0 #FIXME:
 
                 plays = 1
 
@@ -119,4 +117,57 @@ def get_movies():
     #         if j['type'] == 'movie':
     #             print(j)
 
-get_movies()
+
+def get_tv():
+    file = open('data.json', 'r')
+    data = json.load(file)
+    file.close()
+
+    engine = create_engine("sqlite:///database.db")
+    SQLModel.metadata.create_all(engine)
+            
+    for item in data['watched'][385:400]:
+        if 'show' in item.keys():
+
+            trakt_id = item['show']['ids']['trakt']
+
+            with Session(engine) as session:
+                existed = session.exec(select(TV).where(TV.trakt_id == trakt_id)).first()
+            
+            if not existed:
+                tmdb_id = item['show']['ids']['tmdb']
+                title = item['show']['title']
+                episode_plays = item['plays']
+                released_year = item['show']['year']
+                rating = 0 #FIXME:
+
+                networks = GetTvData.get_network(tmdb_id=tmdb_id)
+                networs_ids = [network.id for network in networks]
+
+                poster = GetTvData.get_poster(tmdb_id=tmdb_id)
+                genres = GetTvData.get_genres(tmdb_id=tmdb_id)
+                countries = GetTvData.get_countries(tmdb_id=tmdb_id)
+
+                show = TV(
+                    trakt_id=trakt_id,
+                    title=title,
+                    episode_plays=episode_plays,
+                    released_year=released_year,
+                    rating=rating,
+                    poster=poster,
+                    genres=genres,
+                    countries=countries,
+                    networks=networs_ids
+                )
+
+                with Session(engine) as session:
+                    session.add(show)
+                    
+                    for network in networks:
+                        if not session.exec(select(Network).where(Network.id == network.id)).first():
+                            session.add(network)
+                    
+                    session.commit()
+
+
+get_tv()
