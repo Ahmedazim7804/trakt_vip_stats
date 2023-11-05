@@ -1,0 +1,15 @@
+{
+    "include": [
+        "."
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/cdk.out",
+        "**/.pytest_cache",
+        "**/build",
+        "**/dist",
+        "**/.vscode",
+        "**/__pycache__",
+    ],
+    "reportMissingImports": true,
+}

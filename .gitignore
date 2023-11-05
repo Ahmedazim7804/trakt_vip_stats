@@ -1,0 +1,6 @@
+traktexport/
+traktstats/
+.venv/
+.ruff_cache/
+__pycache__/
+tempCodeRunnerFile.py
