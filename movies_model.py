@@ -93,13 +93,22 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True)
         
 
 
-class MovieGetData:
-    @staticmethod
-    def get_genres(tmdb_id):
+class MovieData:
+
+    def __init__(self, tmdb_id):
+        self.tmdb_id = tmdb_id
+
+        try:
+            self.movieDetails = TMDbMovie.details(self.tmdb_id)
+            self.movieCredits = TMDbMovie.credits(self.tmdb_id)
+        except: 
+            logger.error(f"TMDb Movie Id : '{self.tmdb_show_id}', failed to get INFO")
+
+    def genres(self):
         genres = []
 
         try:
-            item_info = TMDbMovie.details(tmdb_id)["genres"]
+            item_info = self.movieDetails["genres"]
 
             for genre in item_info:
                 genre = genre["name"]
@@ -108,45 +117,42 @@ class MovieGetData:
                 else:
                     genres.append(genre)
 
-        except TMDbException:
-            logger.warning(f"TMDb Movie Id : '{tmdb_id}' failed to get Genres")
+        except KeyError:
+            logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Genres")
 
         if not genres:
-            logger.debug(f"TMDb Movie Id : '{tmdb_id}' Genres are empty")
+            logger.debug(f"TMDb Movie Id : '{self.tmdb_id}' Genres are empty")
 
         return genres
     
-    @staticmethod
-    def get_runtime(tmdb_id):
+    def runtime(self):
         runtime = 0
 
         try:
-            runtime = TMDbMovie.details(tmdb_id)['runtime']
-        except TMDbException:
-            logger.warning(f"TMDb Movie Id : '{tmdb_id}' failed to get Runtime")
+            runtime = self.movieDetails['runtime']
+        except KeyError:
+            logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Runtime")
             return runtime
 
         if not runtime:
-            logger.debug(f"TMDB Movie Id: '{tmdb_id}' runtime is 0")
+            logger.debug(f"TMDB Movie Id: '{self.tmdb_id}' runtime is 0")
         
         return runtime
 
-    def get_poster(tmdb_id):
+    def poster(self):
         poster = None
 
         try:
-            poster = TMDbMovie.details(tmdb_id).poster_path
-        except TMDbException:
-            logger.warning(f"TMDb Movie Id : '{tmdb_id}' failed to get Poster")
+            poster = self.movieDetails.poster_path
+        except KeyError:
+            logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Poster")
 
         return poster
 
-    @staticmethod
-    def get_cast(tmdb_id):
+    def cast(self):
         cast_list = []
         try:
-            item_cast = TMDbMovie.credits(tmdb_id)
-            item_cast = item_cast['cast']
+            item_cast = self.movieCredits['cast']
             for actor in item_cast:
                 name, id, gender, image = itemgetter('name', 'id', 'gender', 'profile_path')(actor)
                 if (gender and image):
@@ -157,16 +163,15 @@ class MovieGetData:
                         image=image
                     )
                     cast_list.append(cast)
-        except TMDbException:
-            logger.warning(f"TMDb Movie Id : '{tmdb_id}' failed to get Cast")
+        except KeyError:
+            logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Cast")
 
         return cast_list
 
-    @staticmethod
-    def get_studios(tmdb_id):
+    def studios(self):
         studios = []
         try:
-            studios_data = TMDbMovie.details(tmdb_id).production_companies
+            studios_data = self.movieDetails.production_companies
 
             for studio in studios_data:
                 id, name, url, country = itemgetter('id', 'name', 'logo_path', 'origin_country')(studio)
@@ -176,17 +181,16 @@ class MovieGetData:
                         Studio(id=id, name=name, image=url, country=country)
                     )
 
-        except TMDbException:
-            logger.warning(f"TMDb Movie Id : '{tmdb_id}' failed to get Production Companies")
+        except KeyError:
+            logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Production Companies")
 
         return studios
 
-    @staticmethod
-    def get_crew(tmdb_id):
+    def crew(self):
         directors = []
         writers = []
         try:
-            all_crew = TMDbMovie.credits(tmdb_id)['crew']
+            all_crew = self.movieCredits['crew']
 
             for person in all_crew:
                 id, name, dept, job, image = itemgetter('id', 'name', 'department', 'job', 'profile_path')(person)
@@ -201,33 +205,32 @@ class MovieGetData:
                         Crew(id=id, name=name, dept=dept, job=job, image=image)
                     )
 
-        except (TMDbException, KeyError):
-            logger.warning(f"TMDb Movie Id : '{tmdb_id}' failed to get Crew")
+        except KeyError:
+            logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Crew")
 
         if not directors:
-            logger.debug(f"TMDb Movie Id : '{tmdb_id}' Directors List is Empty")
+            logger.debug(f"TMDb Movie Id : '{self.tmdb_id}' Directors List is Empty")
         if not writers:
-            logger.debug(f"TMDb Movie Id : '{tmdb_id}' Writers List is Empty")
+            logger.debug(f"TMDb Movie Id : '{self.tmdb_id}' Writers List is Empty")
         
         return [*directors, *writers]
     
 
-    @staticmethod
-    def get_countries(tmdb_id):
+    def countries(self):
         try:
             countries = []
 
-            item_countries = TMDbMovie.details(tmdb_id)["production_countries"]
+            item_countries = self.movieDetails["production_countries"]
 
             for item_country in item_countries:
                 country = item_country['iso_3166_1']
                 countries.append(country)
 
-        except (TMDbException, KeyError):
-            logger.warning(f"TMDb Movie Id : '{tmdb_id}' failed to get Production Countries")
+        except KeyError:
+            logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Production Countries")
 
         if not countries:
-            logger.debug(f"TMDb Movie Id : '{tmdb_id}' Production Countries List is Empty")
+            logger.debug(f"TMDb Movie Id : '{self.tmdb_id}' Production Countries List is Empty")
 
         return countries
 

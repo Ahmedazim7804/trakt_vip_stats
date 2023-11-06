@@ -2,9 +2,9 @@ from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
 from sqlitedict import SqliteDict
 import json
-from movies_model import Movie, MovieGetData, Cast, Studio, Crew
+from movies_model import Movie, MovieData, Cast, Studio, Crew
 from shows_model import TV, GetTvData, Network
-from episode_model import Episode, GetEpisode
+from episode_model import Episode, EpisodeData
 from sqlmodel import SQLModel, create_engine, Session, select
 import main
 from loguru import logger
@@ -38,29 +38,29 @@ def get_movie(item):
 
         logger.info(f"Getting Movie trakt_id={trakt_id} Data and adding to Database")
 
+        tmdb_id = item['movie']['ids']['tmdb']
         title = item['movie']['title']
         released_year = item['movie']['year']
         imdb_id = item['movie']['ids']['imdb']
-        tmdb_id = item['movie']['ids']['tmdb']
         watched_ids = [watched_id]
         watched_at = item['watched_at']
-
         rating = item['rating'] if 'rating' in item.keys() else 0 #FIXME:
-
         plays = 1 #TODO: make plays=1 default in model.
 
-        countries = MovieGetData.get_countries(tmdb_id=tmdb_id)
-        poster = MovieGetData.get_poster(tmdb_id=tmdb_id)
-        runtime = MovieGetData.get_runtime(tmdb_id=tmdb_id)
-        genres = MovieGetData.get_genres(tmdb_id=tmdb_id)
+        movieData = MovieData(tmdb_id=tmdb_id)
 
-        studios = MovieGetData.get_studios(tmdb_id=tmdb_id)
+        countries = movieData.countries()
+        poster = movieData.poster()
+        runtime = movieData.runtime()
+        genres = movieData.genres()
+
+        studios = movieData.studios()
         studios_ids = [studio.id for studio in studios]
 
-        cast = MovieGetData.get_cast(tmdb_id=tmdb_id)
+        cast = movieData.cast()
         cast_ids = [person.id for person in cast]
 
-        crew = MovieGetData.get_crew(tmdb_id=tmdb_id)
+        crew = movieData.crew()
         crew_ids = [person.id for person in crew]
 
         movie = Movie(
@@ -188,12 +188,15 @@ def get_episode(item):
         season = item['episode']['season']
         episode = item['episode']['number']
         episode_title = item['episode']['title']
-        runtime = GetEpisode.runtime(tmdb_show_id, season, episode)
-        
-        cast = GetEpisode.cast(tmdb_show_id, season, episode)
+
+        episodeData = EpisodeData(tmdb_show_id=tmdb_show_id, season=season, episode=episode)
+
+        runtime = episodeData.runtime()
+
+        cast = episodeData.cast()
         cast_ids = [person.id for person in cast]
 
-        crew = GetEpisode.crew(tmdb_show_id, season, episode)
+        crew = episodeData.crew()
         crew_ids = [person.id for person in crew]
         rating = 0 #FIXME:
 
@@ -239,11 +242,39 @@ def get_episode(item):
             session.commit()
 
 
-for page in range(1,100):
-    url = urljoin(BASE_URL, f"users/ahmedazim7804/history?page={page}")
-    data = CORE._handle_request(method='get', url=url)
-    for j in data:
-        if j['type'] == 'movie':
-           get_movie(j)
-        if j['type'] == 'episode':
-            get_episode(j)
+def trakt_history_page(item):
+    if item['type'] == 'movie':
+        get_movie(item)
+    if item['type'] == 'episode':
+        get_episode(item)
+
+
+import time
+aa = time.time()
+
+# for page in range(5):
+#     url = urljoin(BASE_URL, f"users/ahmedazim7804/history?page={page}")
+#     data = CORE._handle_request(method='get', url=url)
+#     for j in data:
+#         if j['type'] == 'movie':
+#            get_movie(j)
+#         if j['type'] == 'episode':
+#             get_episode(j)
+
+from mpire import WorkerPool
+from mpire.utils import make_single_arguments
+
+with WorkerPool(n_jobs=10) as pool:
+    for page in range(1, 100):
+        url = urljoin(BASE_URL, f"users/ahmedazim7804/history?page={page}")
+        data = CORE._handle_request(method='get', url=url)
+
+        if (page % 5 == 0):
+            logger.warning("Sleeping for 1 second")
+            time.sleep(1)
+
+        data = make_single_arguments(data, generator=False)
+
+        pool.map(trakt_history_page, data)
+
+print(time.time()-aa)

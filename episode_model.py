@@ -27,32 +27,42 @@ class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
     cast : List[int] = Field(sa_column=Column(JSON))
     crew : List[int] = Field(sa_column=Column(JSON))
 
-class GetEpisode:
-    
-    @staticmethod
-    def format(season, episode):
-        return f"S{str(season).zfill(2)}E{str(season).zfill(2)}"
+class EpisodeData:
 
-    @staticmethod
-    def runtime(tmdb_show_id, season, episode):
+    def __init__(self, tmdb_show_id, season, episode):
+        self.tmdb_show_id = tmdb_show_id
+        self.season = season
+        self.episode =episode
+
+        try:
+            self.episodeDetails = TMDbEpisode.details(tmdb_show_id, season, episode)
+            self.episodeCredits = TMDbEpisode.credits(tmdb_show_id, season, episode)
+        except:
+            logger.error(f"TMDb Show Id : '{self.tmdb_show_id}', {self.format()} failed to get INFO")
+            self.episodeDetails = {}
+            self.episodeCredits = {}
+
+    def format(self):
+        return f"S{str(self.season).zfill(2)}E{str(self.episode).zfill(2)}"
+
+    def runtime(self):
         runtime = 0
 
         try:
-            runtime = TMDbEpisode.details(tmdb_show_id, season, episode)['runtime']
-        except TMDbException:
-            logger.warning(f"TMDb Show Id : '{tmdb_show_id}', {GetEpisode.format(season, episode)} failed to get runtime")
+            runtime = self.episodeDetails['runtime']
+        except KeyError:
+            logger.warning(f"TMDb Show Id : '{self.tmdb_show_id}', {self.format()} failed to get runtime")
 
         if not runtime:
-            logger.debug(f"TMDb Show Id : '{tmdb_show_id}', {GetEpisode.format(season, episode)} runtime is 0")
+            logger.debug(f"TMDb Show Id : '{self.tmdb_show_id}', {self.format()} runtime is 0")
         
         return runtime
 
     
-    @staticmethod
-    def cast(tmdb_show_id, season, episode):
+    def cast(self):
         cast_list = []
         try:
-            item_cast = TMDbEpisode.credits(tmdb_show_id, season, episode)['cast']
+            item_cast = self.episodeCredits['cast']
 
             for actor in item_cast:
                 name, id, gender, image = itemgetter('name', 'id', 'gender', 'profile_path')(actor)
@@ -64,17 +74,16 @@ class GetEpisode:
                         image=image,
                     )
                     cast_list.append(cast)
-        except TMDbException:
-            logger.warning(f"TMDb Movie Id : '{tmdb_show_id}' {GetEpisode.format(season, episode)} failed to get Cast")
+        except KeyError:
+            logger.warning(f"TMDb Movie Id : '{self.tmdb_show_id}' {self.format()} failed to get Cast")
 
         return cast_list
 
-    @staticmethod
-    def crew(tmdb_show_id, season, episode):
+    def crew(self):
         directors = []
         writers = []
         try:
-            all_crew = TMDbEpisode.credits(tmdb_show_id, season, episode)['crew']
+            all_crew = self.episodeCredits['crew']
 
             for person in all_crew:
                 id, name, dept, job, image = itemgetter('id', 'name', 'department', 'job', 'profile_path')(person)
@@ -89,13 +98,13 @@ class GetEpisode:
                         Crew(id=id, name=name, dept=dept, job=job, image=image)
                     )
 
-        except (TMDbException, KeyError):
-            logger.warning(f"TMDb Movie Id : '{tmdb_show_id}' {GetEpisode.format(season, episode)} failed to get Crew")
+        except KeyError:
+            logger.warning(f"TMDb Movie Id : '{self.tmdb_show_id}' {self.format()} failed to get Crew")
 
         if not directors:
-            logger.debug(f"TMDb Movie Id : '{tmdb_show_id}' {GetEpisode.format(season, episode)} Directors List is Empty")
+            logger.debug(f"TMDb Movie Id : '{self.tmdb_show_id}' {self.format()} Directors List is Empty")
         if not writers:
-            logger.debug(f"TMDb Movie Id : '{tmdb_show_id}' {GetEpisode.format(season, episode)} Writers List is Empty")
+            logger.debug(f"TMDb Movie Id : '{self.tmdb_show_id}' {self.format()} Writers List is Empty")
         
         return [*directors, *writers]
 
