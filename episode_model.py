@@ -12,7 +12,7 @@ tmdb.api_key = "***REMOVED***"
 trakt_CLIENT_ID = "***REMOVED***"
 TMDbEpisode = tmdbv3api.Episode()
 
-
+from sqlmodel import create_engine, Session, select
 class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
     tmdb_id : str = Field(primary_key=True)
     episode_title : str
@@ -26,6 +26,19 @@ class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
     runtime : int
     cast : List[int] = Field(sa_column=Column(JSON))
     crew : List[int] = Field(sa_column=Column(JSON))
+
+    
+    def add_to_db(self):
+        engine = create_engine("sqlite:///database.db")
+        with Session(engine) as session:
+            existed = session.exec(select(Episode).where(Episode.tmdb_id == self.tmdb_id)).first()
+            if not existed:
+                session.add(self)
+                session.commit()
+            else:
+                existed.plays = existed.plays + 1
+        
+            session.commit()
 
 class EpisodeData:
 

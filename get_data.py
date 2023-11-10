@@ -10,20 +10,10 @@ import main
 from loguru import logger
 
 from tmdbv3api import TMDb
+from multiprocessing import Lock
 
 
-engine = create_engine("sqlite:///database.db")
-SQLModel.metadata.create_all(engine)
-
-
-tmdb = TMDb()
-tmdb.api_key = '***REMOVED***'
-trakt_CLIENT_ID = '***REMOVED***'
-
-username = "***REMOVED***"
-client_id ='***REMOVED***'
-client_secret = '***REMOVED***'
-main.authenticate(username, client_id=client_id, client_secret=client_secret)
+lock = Lock()
 
 
 def get_movie(item):
@@ -33,7 +23,7 @@ def get_movie(item):
 
     with Session(engine) as session:
         existed = session.exec(select(Movie).where(Movie.id == trakt_id)).first()
-    
+        
     if not existed:
 
         logger.info(f"Getting Movie trakt_id={trakt_id} Data and adding to Database")
@@ -83,42 +73,25 @@ def get_movie(item):
             released_year=released_year,
         )
 
-        with Session(engine) as session:
-            session.add(movie)
+        lock.acquire()
 
-            for person in cast:
-                existed_person = session.exec(select(Cast).where(Cast.id == person.id)).first()
-                if not existed_person:
-                    person.add_movie(tmdb_id)
-                    session.add(person)
-                else:
-                    existed_person.add_movie(tmdb_id)
+        movie.add_to_db()
+
+        for person in cast:
+            person.add_to_db(tmdb_id, type='movie')
             
-            for person in crew:
-                existed_person = session.exec(select(Crew).where(Crew.id == person.id)).first()
-                if not existed_person:
-                    person.add_movie(tmdb_id)
-                    session.add(person)
-                else:
-                    existed_person.add_movie(tmdb_id)
+        for person in crew:
+            person.add_to_db(tmdb_id, type='movie')
 
-            for studio in studios:
-                existed_studio = session.exec(select(Studio).where(Studio.id == studio.id)).first()
-                if not existed_studio:
-                    session.add(studio)
-                else:
-                    existed_studio.movies = existed_studio.movies + 1
-
-            session.commit()
+        for studio in studios:
+            studio.add_to_db()
+        
+        lock.release()
 
     elif watched_id not in existed.watched_ids:
-        existed.watched_ids = [*existed.watched_ids, watched_id]
-        existed.watched_at = [*existed.watched_at, item['watched_at']]
-        existed.plays += 1
-
-        with Session(engine) as session:
-            session.add(existed)
-            session.commit()
+        lock.acquire()
+        existed.add_to_db()
+        lock.release()
 
 
 def get_tv(item):
@@ -176,7 +149,7 @@ def get_episode(item):
 
     with Session(engine) as session:
         existed = session.exec(select(Episode).where(Episode.tmdb_id == tmdb_id)).first()
-
+    
     if not existed:
 
         logger.info(f"Getting Episode tmdb_id={tmdb_id} Data and adding to Database")
@@ -213,33 +186,16 @@ def get_episode(item):
             crew=crew_ids
         )
 
-        with Session(engine) as session:
-            session.add(episode)
+        lock.acquire()
+        episode.add_to_db()
 
-            for person in cast:
-                existed_person = session.exec(select(Cast).where(Cast.id == person.id)).first()
-                if not existed_person:
-                    person.add_show(tmdb_show_id)
-                    person.add_episode()
-                    session.add(person)
-                else:
-                    existed_person.add_show(tmdb_show_id)
-                    existed_person.add_episode()
-                    session.add(existed_person)
+        for person in cast:
+            person.add_to_db(tmdb_show_id, type='episode')
                 
-                
-            for person in crew:
-                existed_person = session.exec(select(Crew).where(Crew.id == person.id)).first()
-                if not existed_person:
-                    person.add_show(tmdb_show_id)
-                    person.add_episode()
-                    session.add(person)
-                else:
-                    existed_person.add_show(tmdb_show_id)
-                    existed_person.add_episode()
-                    session.add(existed_person)
+        for person in crew:
+            person.add_to_db(tmdb_show_id, type='episode')
         
-            session.commit()
+        lock.release()
 
 
 def trakt_history_page(item):
@@ -248,8 +204,25 @@ def trakt_history_page(item):
     if item['type'] == 'episode':
         get_episode(item)
 
+global jobs
+jobs = []
 
-import time
+engine = create_engine("sqlite:///database.db")
+SQLModel.metadata.create_all(engine)
+
+
+tmdb = TMDb()
+tmdb.api_key = '***REMOVED***'
+trakt_CLIENT_ID = '***REMOVED***'
+
+username = "***REMOVED***"
+client_id ='***REMOVED***'
+client_secret = '***REMOVED***'
+main.authenticate(username, client_id=client_id, client_secret=client_secret)
+
+
+import time 
+
 aa = time.time()
 
 # for page in range(5):
@@ -260,21 +233,32 @@ aa = time.time()
 #            get_movie(j)
 #         if j['type'] == 'episode':
 #             get_episode(j)
+from joblib import Parallel, delayed
+
+def run_parallely(fn, items):
+    return Parallel(n_jobs=10, backend='threading', require='sharedmem')(delayed(fn)(item) for item in items)
 
 from mpire import WorkerPool
 from mpire.utils import make_single_arguments
 
+
 with WorkerPool(n_jobs=10) as pool:
-    for page in range(1, 100):
+    for page in range(83, 100):
         url = urljoin(BASE_URL, f"users/ahmedazim7804/history?page={page}")
         data = CORE._handle_request(method='get', url=url)
 
         if (page % 5 == 0):
-            logger.warning("Sleeping for 1 second")
+            logger.warning(f"Sleeping for 1 second : Page {page}")
             time.sleep(1)
 
         data = make_single_arguments(data, generator=False)
 
+        #run_parallely(trakt_history_page, data)
         pool.map(trakt_history_page, data)
+
+for job in jobs:
+    print(job)
+
+print(len(jobs))
 
 print(time.time()-aa)

@@ -5,6 +5,7 @@ import tmdbv3api
 from operator import itemgetter
 from tmdbv3api.exceptions import TMDbException
 from loguru import logger
+from sqlmodel import create_engine, Session, select
 
 
 tmdb = TMDb()
@@ -24,18 +25,42 @@ class Cast(SQLModel, table=True, arbitrary_types_allowed=True):
     movies : List[int] = Field(sa_column=Column(JSON), default=[])
     movies_count : int = Field(default=0)
 
-    def add_show(my, show):
-        if show not in my.shows:
-            my.shows = [*my.shows, show]
-            my.shows_count = my.shows_count + 1
-    
-    def add_episode(my):
-        my.episode = my.episode + 1
+    def add_to_db(self, tmdb_id, type):
+        engine = create_engine("sqlite:///database.db")
+        with Session(engine) as session:
+            existed_person = session.exec(select(Cast).where(Cast.id == self.id)).first()
+            if not existed_person:
+                if type == 'episode':
+                    self.add_show(tmdb_id)
+                    self.add_episode()
+                if type =='movie':
+                    self.add_movie(tmdb_id)
+                session.add(self)
+            else:
+                if type == 'episode':
+                    existed_person.add_show(tmdb_id)
+                    existed_person.add_episode()
+                if type == 'movie':
+                    existed_person.add_movie(tmdb_id)
+                session.add(existed_person)
 
-    def add_movie(my, movie):
-        if movie not in my.movies:
-            my.movies = [*my.movies, movie]
-            my.movies_count = my.movies_count + 1
+            session.commit()
+
+
+    def add_show(self, show):
+        if show not in self.shows:
+            self.shows = [*self.shows, show]
+            self.shows_count = self.shows_count + 1
+
+    
+    def add_episode(self):
+        self.episode = self.episode + 1
+
+
+    def add_movie(self, movie):
+        if movie not in self.movies:
+            self.movies = [*self.movies, movie]
+            self.movies_count = self.movies_count + 1
 
 
 class Crew(SQLModel, table=True, arbitrary_types_allowed=True):
@@ -50,18 +75,39 @@ class Crew(SQLModel, table=True, arbitrary_types_allowed=True):
     movies : List[int] = Field(sa_column=Column(JSON), default=[])
     movies_count : int = Field(default=0)
 
-    def add_show(my,show):
-        if show not in my.shows:
-            my.shows = [*my.shows, show]
-            my.shows_count = my.shows_count + 1
-    
-    def add_episode(my):
-        my.episode = my.episode + 1
+    def add_to_db(self, tmdb_id, type):
+        engine = create_engine("sqlite:///database.db")
+        with Session(engine) as session:
+            existed_person = session.exec(select(Crew).where(Crew.id == self.id)).first()
+            if not existed_person:
+                if type == 'episode':
+                    self.add_show(tmdb_id)
+                    self.add_episode()
+                if type == 'movie':
+                    self.add_movie(tmdb_id)
+                session.add(self)
+            else:
+                if type == 'episode':
+                    existed_person.add_show(tmdb_id)
+                    existed_person.add_episode()
+                if type == 'movie':
+                    existed_person.add_movie(tmdb_id)
+                session.add(existed_person)
+            
+            session.commit()
 
-    def add_movie(my, movie):
-        if movie not in my.movies:
-            my.movies = [*my.movies, movie]
-            my.movies_count = my.movies_count + 1
+    def add_show(self, show):
+        if show not in self.shows:
+            self.shows = [*self.shows, show]
+            self.shows_count = self.shows_count + 1
+    
+    def add_episode(self):
+        self.episode = self.episode + 1
+
+    def add_movie(self, movie):
+        if movie not in self.movies:
+            self.movies = [*self.movies, movie]
+            self.movies_count = self.movies_count + 1
 
 
 class Studio(SQLModel, table=True, arbitrary_types_allowed=True):
@@ -70,6 +116,19 @@ class Studio(SQLModel, table=True, arbitrary_types_allowed=True):
     country: Optional[str]
     movies: int = Field(default=1)
     image: Optional[str]
+
+    def add_to_db(self):
+        engine = create_engine("sqlite:///database.db")
+        with Session(engine) as session:
+            existed_studio = session.exec(select(Studio).where(Studio.id == self.id)).first()
+            if not existed_studio:
+                session.add(self)
+            else:
+                existed_studio.movies = existed_studio.movies + 1
+                session.add(existed_studio)
+            
+            session.commit()
+        
 
 
 class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True):
@@ -90,6 +149,20 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True)
     runtime: Optional[int]
     poster: Optional[str]
     rating: Optional[int] = Field(default=0)
+
+    def add_to_db(self):
+        engine = create_engine("sqlite:///database.db")
+        with Session(engine) as session:
+            existed = session.exec(select(Movie).where(Movie.tmdb_id == self.tmdb_id)).first()
+            if not existed:
+                session.add(self)
+                session.commit()
+            else:
+                existed.watched_ids = [*existed.watched_ids, *self.watched_ids]
+                existed.watched_at = [*existed.watched_at, *self.watched_at]
+                existed.plays = existed.plays + 1
+            
+            session.commit()
         
 
 
