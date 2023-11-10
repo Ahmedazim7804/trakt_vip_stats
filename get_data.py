@@ -1,19 +1,16 @@
 from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
-from sqlitedict import SqliteDict
-import json
 from movies_model import Movie, MovieData, Cast, Studio, Crew
 from shows_model import TV, GetTvData, Network
 from episode_model import Episode, EpisodeData
 from sqlmodel import SQLModel, create_engine, Session, select
 import main
 from loguru import logger
+from mpire import WorkerPool
+from mpire.utils import make_single_arguments
 
 from tmdbv3api import TMDb
 from multiprocessing import Lock
-
-
-lock = Lock()
 
 
 def get_movie(item):
@@ -204,8 +201,6 @@ def trakt_history_page(item):
     if item['type'] == 'episode':
         get_episode(item)
 
-global jobs
-jobs = []
 
 engine = create_engine("sqlite:///database.db")
 SQLModel.metadata.create_all(engine)
@@ -225,21 +220,7 @@ import time
 
 aa = time.time()
 
-# for page in range(5):
-#     url = urljoin(BASE_URL, f"users/ahmedazim7804/history?page={page}")
-#     data = CORE._handle_request(method='get', url=url)
-#     for j in data:
-#         if j['type'] == 'movie':
-#            get_movie(j)
-#         if j['type'] == 'episode':
-#             get_episode(j)
-from joblib import Parallel, delayed
-
-def run_parallely(fn, items):
-    return Parallel(n_jobs=10, backend='threading', require='sharedmem')(delayed(fn)(item) for item in items)
-
-from mpire import WorkerPool
-from mpire.utils import make_single_arguments
+lock = Lock()
 
 
 with WorkerPool(n_jobs=10) as pool:
@@ -253,12 +234,6 @@ with WorkerPool(n_jobs=10) as pool:
 
         data = make_single_arguments(data, generator=False)
 
-        #run_parallely(trakt_history_page, data)
         pool.map(trakt_history_page, data)
-
-for job in jobs:
-    print(job)
-
-print(len(jobs))
 
 print(time.time()-aa)
