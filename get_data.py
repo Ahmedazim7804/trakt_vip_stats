@@ -239,8 +239,11 @@ def run_parallely(fn, items):
 queue = multiprocessing.Queue()
 
 def fxn1():
+
+    
+
     with ProcessPool(max_workers=10) as pool:
-        end = 500
+        end = 2
         for page in range(1, end+1):
             url = urljoin(BASE_URL, f"users/ahmedazim7804/history?page={page}")
             data = CORE._handle_request(method='get', url=url)
@@ -257,7 +260,10 @@ def fxn1():
             #data = make_single_arguments(data, generator=False)
 
             pool.map(trakt_history_page, data)
-
+            if page == end:
+                pool.close()
+                pool.join()
+                queue.put(['stop'])
         # with ProcessPoolExecutor(max_workers=10) as executor:
         #     executor.map(trakt_history_page, data)
         #pool.map(trakt_history_page, data)
