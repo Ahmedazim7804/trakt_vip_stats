@@ -15,6 +15,8 @@ from multiprocessing import Lock
 
 def get_movie(item):
 
+    global queue
+
     watched_id = str(item['id']) # Unique Watched id, unique for any item
     trakt_id = item['movie']['ids']['trakt'] # Unique movie trakt id
 
@@ -70,25 +72,27 @@ def get_movie(item):
             released_year=released_year,
         )
 
-        lock.acquire()
+        
 
-        movie.add_to_db()
+        queue.put([movie.add_to_db, []])
 
         for person in cast:
-            person.add_to_db(tmdb_id, type='movie')
+            queue.put([person.add_to_db, [tmdb_id, 'movie']])
+            pass
             
         for person in crew:
-            person.add_to_db(tmdb_id, type='movie')
+            queue.put([person.add_to_db, [tmdb_id, 'movie']])
+            pass
 
         for studio in studios:
-            studio.add_to_db()
+            queue.put([studio.add_to_db, []])
+            pass
         
-        lock.release()
 
     elif watched_id not in existed.watched_ids:
-        lock.acquire()
-        existed.add_to_db()
-        lock.release()
+        pass
+        queue.put([existed.add_to_db, []])
+        
 
 
 def get_tv(item):
@@ -141,6 +145,7 @@ def get_tv(item):
 
 
 def get_episode(item):
+    global queue
 
     tmdb_id = item['episode']['ids']['tmdb']
 
@@ -183,16 +188,18 @@ def get_episode(item):
             crew=crew_ids
         )
 
-        lock.acquire()
-        episode.add_to_db()
+        
+        queue.put([episode.add_to_db, []])
 
         for person in cast:
-            person.add_to_db(tmdb_show_id, type='episode')
+            queue.put([person.add_to_db, [tmdb_show_id, 'episode']])
+            pass
                 
         for person in crew:
-            person.add_to_db(tmdb_show_id, type='episode')
+            queue.put([person.add_to_db, [tmdb_show_id, 'episode']])
+            pass
         
-        lock.release()
+        
 
 
 def trakt_history_page(item):
@@ -206,9 +213,9 @@ engine = create_engine("sqlite:///database.db")
 SQLModel.metadata.create_all(engine)
 
 
-tmdb = TMDb()
-tmdb.api_key = '***REMOVED***'
-trakt_CLIENT_ID = '***REMOVED***'
+# tmdb = TMDb()
+# tmdb.api_key = '***REMOVED***'
+# trakt_CLIENT_ID = '***REMOVED***'
 
 username = "***REMOVED***"
 client_id ='***REMOVED***'
@@ -220,20 +227,57 @@ import time
 
 aa = time.time()
 
-lock = Lock()
+from multiprocessing import Process
+import multiprocessing
+from multiprocessing import Pool
+from joblib import Parallel, delayed
+from pebble import ProcessPool
 
+def run_parallely(fn, items):
+    return Parallel(n_jobs=10, backend='threading')(delayed(fn)(item) for item in items)
 
-with WorkerPool(n_jobs=10) as pool:
-    for page in range(83, 100):
-        url = urljoin(BASE_URL, f"users/ahmedazim7804/history?page={page}")
-        data = CORE._handle_request(method='get', url=url)
+queue = multiprocessing.Queue()
 
-        if (page % 5 == 0):
-            logger.warning(f"Sleeping for 1 second : Page {page}")
-            time.sleep(1)
+def fxn1():
+    with ProcessPool(max_workers=10) as pool:
+        end = 500
+        for page in range(1, end+1):
+            url = urljoin(BASE_URL, f"users/ahmedazim7804/history?page={page}")
+            data = CORE._handle_request(method='get', url=url)
 
-        data = make_single_arguments(data, generator=False)
+            if not data:
+                logger.error(f"COMPLETED")
 
-        pool.map(trakt_history_page, data)
+            if (page % 5 == 0):
+                logger.warning(f"Sleeping for 1 second : Page {page}")
+                time.sleep(1)
+
+            # with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
+            #     executor.map(trakt_history_page, data)
+            #data = make_single_arguments(data, generator=False)
+
+            pool.map(trakt_history_page, data)
+
+        # with ProcessPoolExecutor(max_workers=10) as executor:
+        #     executor.map(trakt_history_page, data)
+        #pool.map(trakt_history_page, data)
+
+        #run_parallely(trakt_history_page, data)
+
+def fxn2(queue):
+    while True:
+        try:
+            fxn, args = queue.get()
+            fxn(*args)
+        except:
+            break
+
+p1 = Process(target=fxn1, )
+p2 = Process(target=fxn2, args=(queue,))
+p1.start()
+p2.start()
+p1.join()
+p2.join()
+
 
 print(time.time()-aa)

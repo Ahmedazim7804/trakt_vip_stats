@@ -174,8 +174,8 @@ class MovieData:
         try:
             self.movieDetails = TMDbMovie.details(self.tmdb_id)
             self.movieCredits = TMDbMovie.credits(self.tmdb_id)
-        except: 
-            logger.error(f"TMDb Movie Id : '{self.tmdb_show_id}', failed to get INFO")
+        except Exception as e:
+            logger.error(f"TMDb Movie Id : '{self.tmdb_id}', failed to get INFO because {e}")
 
     def genres(self):
         genres = []
@@ -190,7 +190,7 @@ class MovieData:
                 else:
                     genres.append(genre)
 
-        except KeyError:
+        except (KeyError, AttributeError):
             logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Genres")
 
         if not genres:
@@ -203,11 +203,11 @@ class MovieData:
 
         try:
             runtime = self.movieDetails['runtime']
-        except KeyError:
+        except (KeyError, AttributeError):
             logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Runtime")
             return runtime
 
-        if not runtime:
+        if not (KeyError, AttributeError):
             logger.debug(f"TMDB Movie Id: '{self.tmdb_id}' runtime is 0")
         
         return runtime
@@ -217,7 +217,7 @@ class MovieData:
 
         try:
             poster = self.movieDetails.poster_path
-        except KeyError:
+        except (KeyError, AttributeError):
             logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Poster")
 
         return poster
@@ -236,7 +236,7 @@ class MovieData:
                         image=image
                     )
                     cast_list.append(cast)
-        except KeyError:
+        except (KeyError, AttributeError):
             logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Cast")
 
         return cast_list
@@ -254,7 +254,7 @@ class MovieData:
                         Studio(id=id, name=name, image=url, country=country)
                     )
 
-        except KeyError:
+        except (KeyError, AttributeError):
             logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Production Companies")
 
         return studios
@@ -278,7 +278,7 @@ class MovieData:
                         Crew(id=id, name=name, dept=dept, job=job, image=image)
                     )
 
-        except KeyError:
+        except (KeyError, AttributeError):
             logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Crew")
 
         if not directors:
@@ -299,7 +299,7 @@ class MovieData:
                 country = item_country['iso_3166_1']
                 countries.append(country)
 
-        except KeyError:
+        except (KeyError, AttributeError):
             logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Production Countries")
 
         if not countries:
@@ -307,4 +307,4 @@ class MovieData:
 
         return countries
 
-#print(MovieGetData.get_genres(tmdb_id='550'))
+print(MovieData('754').runtime())

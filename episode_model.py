@@ -50,8 +50,8 @@ class EpisodeData:
         try:
             self.episodeDetails = TMDbEpisode.details(tmdb_show_id, season, episode)
             self.episodeCredits = TMDbEpisode.credits(tmdb_show_id, season, episode)
-        except:
-            logger.error(f"TMDb Show Id : '{self.tmdb_show_id}', {self.format()} failed to get INFO")
+        except Exception as e:
+            logger.error(f"TMDb Show Id : '{self.tmdb_show_id}', {self.format()} failed to get INFO because {e}")
             self.episodeDetails = {}
             self.episodeCredits = {}
 
@@ -88,7 +88,7 @@ class EpisodeData:
                     )
                     cast_list.append(cast)
         except KeyError:
-            logger.warning(f"TMDb Movie Id : '{self.tmdb_show_id}' {self.format()} failed to get Cast")
+            logger.warning(f"TMDb Show Id : '{self.tmdb_show_id}' {self.format()} failed to get Cast")
 
         return cast_list
 
@@ -112,12 +112,12 @@ class EpisodeData:
                     )
 
         except KeyError:
-            logger.warning(f"TMDb Movie Id : '{self.tmdb_show_id}' {self.format()} failed to get Crew")
+            logger.warning(f"TMDb Show Id : '{self.tmdb_show_id}' {self.format()} failed to get Crew")
 
         if not directors:
-            logger.debug(f"TMDb Movie Id : '{self.tmdb_show_id}' {self.format()} Directors List is Empty")
+            logger.debug(f"TMDb Show Id : '{self.tmdb_show_id}' {self.format()} Directors List is Empty")
         if not writers:
-            logger.debug(f"TMDb Movie Id : '{self.tmdb_show_id}' {self.format()} Writers List is Empty")
+            logger.debug(f"TMDb Show Id : '{self.tmdb_show_id}' {self.format()} Writers List is Empty")
         
         return [*directors, *writers]
 
