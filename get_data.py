@@ -231,39 +231,57 @@ from multiprocessing import Process
 import multiprocessing
 from multiprocessing import Pool
 from joblib import Parallel, delayed
-from pebble import ProcessPool
+from pebble import ThreadPool
 
 def run_parallely(fn, items):
     return Parallel(n_jobs=10, backend='threading')(delayed(fn)(item) for item in items)
 
 queue = multiprocessing.Queue()
+from multiprocessing import Lock
+lock = Lock()
+import concurrent
+
+url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
+data = CORE._handle_request(method='get', url=url)
+
+total_movies = data['movies']['plays']
+total_episodes = data['episodes']['plays']
 
 def fxn1():
-
-    
-
-    with ProcessPool(max_workers=10) as pool:
-        end = 2
-        for page in range(1, end+1):
-            url = urljoin(BASE_URL, f"users/ahmedazim7804/history?page={page}")
+    session = Session(engine)
+    #with ThreadPool(max_workers=10) as pool:
+    #TODO: with pebble but limit=50 or higher
+    with WorkerPool(n_jobs=10) as pool:
+        page = 1
+        while True:
+            url = urljoin(BASE_URL, f"users/ahmedazim7804/history?limit=50all&page={page}")
             data = CORE._handle_request(method='get', url=url)
-
-            if not data:
-                logger.error(f"COMPLETED")
+                
 
             if (page % 5 == 0):
                 logger.warning(f"Sleeping for 1 second : Page {page}")
                 time.sleep(1)
 
-            # with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
-            #     executor.map(trakt_history_page, data)
-            #data = make_single_arguments(data, generator=False)
+            #executor.map(trakt_history_page, data)
+            data = make_single_arguments(data, generator=False)
+
+            # current_movies = sum(session.exec(select(Movie.plays)).all()) #only for pebble
+            # current_episodes = sum(session.exec(select(Episode.plays)).all())
+            # if total_movies <= current_movies and total_episodes <= current_episodes:
+            #     print(current_movies, current_episodes)
+            #     queue.put(['stop'])
+            #     break
+
+            if not data:
+                logger.error(f"COMPLETED")
+                queue.put(['stop'])
+                break
 
             pool.map(trakt_history_page, data)
-            if page == end:
-                pool.close()
-                pool.join()
-                queue.put(['stop'])
+
+            page += 1
+
+
         # with ProcessPoolExecutor(max_workers=10) as executor:
         #     executor.map(trakt_history_page, data)
         #pool.map(trakt_history_page, data)
