@@ -163,6 +163,16 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True)
                 existed.plays = existed.plays + 1
             
             session.commit()
+    
+    def update(self, watched_id, watched_at):
+        engine = create_engine("sqlite:///database.db")
+        with Session(engine) as session:
+            self.watched_at = [*self.watched_at, watched_at]
+            self.watched_ids = [*self.watched_ids, watched_id]
+            self.plays = self.plays + 1
+            session.add(self)
+            session.commit()
+
         
 
 

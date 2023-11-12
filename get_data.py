@@ -19,6 +19,7 @@ def get_movie(item):
 
     watched_id = str(item['id']) # Unique Watched id, unique for any item
     trakt_id = item['movie']['ids']['trakt'] # Unique movie trakt id
+    watched_at = str(item['watched_at'])
 
     with Session(engine) as session:
         existed = session.exec(select(Movie).where(Movie.id == trakt_id)).first()
@@ -32,7 +33,7 @@ def get_movie(item):
         released_year = item['movie']['year']
         imdb_id = item['movie']['ids']['imdb']
         watched_ids = [watched_id]
-        watched_at = item['watched_at']
+        watched_at = [watched_at]
         rating = item['rating'] if 'rating' in item.keys() else 0 #FIXME:
         plays = 1 #TODO: make plays=1 default in model.
 
@@ -58,7 +59,7 @@ def get_movie(item):
             trakt_id=trakt_id,
             imdb_id=imdb_id,
             tmdb_id=tmdb_id,
-            watched_at=[watched_at],
+            watched_at=watched_at,
             watched_ids=watched_ids,
             plays=plays,
             genres=genres,
@@ -74,24 +75,23 @@ def get_movie(item):
 
         
 
-        queue.put([movie.add_to_db, []])
+        queue.send([movie.add_to_db, []])
 
         for person in cast:
-            queue.put([person.add_to_db, [tmdb_id, 'movie']])
+            queue.send([person.add_to_db, [tmdb_id, 'movie']])
             pass
             
         for person in crew:
-            queue.put([person.add_to_db, [tmdb_id, 'movie']])
+            queue.send([person.add_to_db, [tmdb_id, 'movie']])
             pass
 
         for studio in studios:
-            queue.put([studio.add_to_db, []])
+            queue.send([studio.add_to_db, []])
             pass
         
 
     elif watched_id not in existed.watched_ids:
-        pass
-        queue.put([existed.add_to_db, []])
+        queue.send([existed.update, [watched_id, watched_at]])
         
 
 
@@ -189,14 +189,14 @@ def get_episode(item):
         )
 
         
-        queue.put([episode.add_to_db, []])
+        queue.send([episode.add_to_db, []])
 
         for person in cast:
-            queue.put([person.add_to_db, [tmdb_show_id, 'episode']])
+            queue.send([person.add_to_db, [tmdb_show_id, 'episode']])
             pass
                 
         for person in crew:
-            queue.put([person.add_to_db, [tmdb_show_id, 'episode']])
+            queue.send([person.add_to_db, [tmdb_show_id, 'episode']])
             pass
         
         
@@ -205,8 +205,8 @@ def get_episode(item):
 def trakt_history_page(item):
     if item['type'] == 'movie':
         get_movie(item)
-    if item['type'] == 'episode':
-        get_episode(item)
+    # if item['type'] == 'episode':
+    #     get_episode(item)
 
 
 engine = create_engine("sqlite:///database.db")
@@ -236,7 +236,8 @@ from pebble import ThreadPool
 def run_parallely(fn, items):
     return Parallel(n_jobs=10, backend='threading')(delayed(fn)(item) for item in items)
 
-queue = multiprocessing.Queue()
+#queue = multiprocessing.Queue()
+queue, child_conn = multiprocessing.Pipe()
 from multiprocessing import Lock
 lock = Lock()
 import concurrent
@@ -269,12 +270,12 @@ def fxn1():
             # current_episodes = sum(session.exec(select(Episode.plays)).all())
             # if total_movies <= current_movies and total_episodes <= current_episodes:
             #     print(current_movies, current_episodes)
-            #     queue.put(['stop'])
+            #     queue.send(['stop'])
             #     break
 
             if not data:
                 logger.error(f"COMPLETED")
-                queue.put(['stop'])
+                queue.send(['stop'])
                 break
 
             pool.map(trakt_history_page, data)
@@ -291,13 +292,13 @@ def fxn1():
 def fxn2(queue):
     while True:
         try:
-            fxn, args = queue.get()
+            fxn, args = queue.recv()
             fxn(*args)
         except:
             break
 
-p1 = Process(target=fxn1, )
-p2 = Process(target=fxn2, args=(queue,))
+p1 = Process(target=fxn1)
+p2 = Process(target=fxn2, args=(child_conn,))
 p1.start()
 p2.start()
 p1.join()
