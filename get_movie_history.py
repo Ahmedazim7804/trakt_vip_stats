@@ -92,56 +92,6 @@ def get_movie(item):
         pipe.send([existed.update, [watched_id, watched_at]])
         
 
-
-def get_tv(item):
-
-    for item in data['watched'][385:400]:
-        if 'show' in item.keys():
-
-            trakt_id = item['show']['ids']['trakt']
-
-            with Session(engine) as session:
-                existed = session.exec(select(TV).where(TV.trakt_id == trakt_id)).first()
-            
-            if not existed:
-                tmdb_id = item['show']['ids']['tmdb']
-                title = item['show']['title']
-                episode_plays = item['plays']
-                released_year = item['show']['year']
-                rating = 0 #FIXME:
-
-                networks = GetTvData.get_network(tmdb_id=tmdb_id)
-                networs_ids = [network.id for network in networks]
-
-                poster = GetTvData.get_poster(tmdb_id=tmdb_id)
-                genres = GetTvData.get_genres(tmdb_id=tmdb_id)
-                countries = GetTvData.get_countries(tmdb_id=tmdb_id)
-
-                show = TV(
-                    trakt_id=trakt_id,
-                    title=title,
-                    episode_plays=episode_plays,
-                    released_year=released_year,
-                    rating=rating,
-                    poster=poster,
-                    genres=genres,
-                    countries=countries,
-                    networks=networs_ids
-                )
-
-                with Session(engine) as session:
-                    session.add(show)
-                    
-                    for network in networks:
-                        existed_network = session.exec(select(Network).where(Network.id == network.id)).first()
-                        if not existed_network:
-                            session.add(network)
-                        else:
-                            existed_network.shows = existed_network.shows + 1
-                    
-                    session.commit()
-
-
 def get_episode(item):
     global pipe
 
@@ -207,7 +157,7 @@ def trakt_history_page(item):
     if item['type'] == 'episode':
         get_episode(item)
 
-def process_get_data():
+def process_get_history():
 
     url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
     data = CORE._handle_request(method='get', url=url)
@@ -275,8 +225,9 @@ if __name__ == '__main__':
     main.authenticate(username, client_id=client_id, client_secret=client_secret)
 
     pipe, child_conn = multiprocessing.Pipe()
-
-    p1 = Process(target=process_get_data)
+    import pdb
+    pdb.set_trace()
+    p1 = Process(target=process_get_history)
     p2 = Process(target=process_add_data, args=(child_conn,))
     p1.start()
     p2.start()
