@@ -6,13 +6,15 @@ from operator import itemgetter
 from tmdbv3api.exceptions import TMDbException
 from loguru import logger
 from movies_model import Cast, Crew
+from sqlmodel import create_engine, Session, select
 
 tmdb = TMDb()
 tmdb.api_key = "***REMOVED***"
 trakt_CLIENT_ID = "***REMOVED***"
 TMDbEpisode = tmdbv3api.Episode()
 
-from sqlmodel import create_engine, Session, select
+engine = create_engine("sqlite:///database.db")
+
 class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
     trakt_id : str = Field(primary_key=True)
     tmdb_id : str
@@ -31,7 +33,6 @@ class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
 
     
     def add_to_db(self):
-        engine = create_engine("sqlite:///database.db")
         with Session(engine) as session:
             existed = session.exec(select(Episode).where(Episode.trakt_id == self.trakt_id)).first()
             if not existed:
@@ -45,7 +46,6 @@ class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
             session.commit()
     
     def update(self, watched_id, watched_at):
-        engine = create_engine("sqlite:///database.db")
         with Session(engine) as session:
             self.watched_ids = [*self.watched_ids, watched_id]
             self.watched_at = [*self.watched_at, watched_at]

@@ -7,6 +7,7 @@ from tmdbv3api.exceptions import TMDbException
 from loguru import logger
 from sqlmodel import create_engine, Session, select
 
+engine = create_engine("sqlite:///database.db")
 
 tmdb = TMDb()
 tmdb.api_key = "***REMOVED***"
@@ -26,7 +27,6 @@ class Cast(SQLModel, table=True, arbitrary_types_allowed=True):
     movies_count : int = Field(default=0)
 
     def add_to_db(self, tmdb_id, type):
-        engine = create_engine("sqlite:///database.db")
         with Session(engine) as session:
             existed_person = session.exec(select(Cast).where(Cast.id == self.id)).first()
             if not existed_person:
@@ -76,7 +76,6 @@ class Crew(SQLModel, table=True, arbitrary_types_allowed=True):
     movies_count : int = Field(default=0)
 
     def add_to_db(self, tmdb_id, type):
-        engine = create_engine("sqlite:///database.db")
         with Session(engine) as session:
             existed_person = session.exec(select(Crew).where(Crew.id == self.id)).first()
             if not existed_person:
@@ -118,7 +117,6 @@ class Studio(SQLModel, table=True, arbitrary_types_allowed=True):
     image: Optional[str]
 
     def add_to_db(self):
-        engine = create_engine("sqlite:///database.db")
         with Session(engine) as session:
             existed_studio = session.exec(select(Studio).where(Studio.id == self.id)).first()
             if not existed_studio:
@@ -151,7 +149,6 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True)
     rating: Optional[int] = Field(default=0)
 
     def add_to_db(self):
-        engine = create_engine("sqlite:///database.db")
         with Session(engine) as session:
             existed = session.exec(select(Movie).where(Movie.tmdb_id == self.tmdb_id)).first()
             if not existed:
@@ -165,7 +162,6 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True)
             session.commit()
     
     def update(self, watched_id, watched_at):
-        engine = create_engine("sqlite:///database.db")
         with Session(engine) as session:
             self.watched_at = [*self.watched_at, watched_at]
             self.watched_ids = [*self.watched_ids, watched_id]

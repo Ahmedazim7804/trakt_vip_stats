@@ -8,14 +8,13 @@ import main
 from loguru import logger
 from mpire import WorkerPool
 from mpire.utils import make_single_arguments
-
-from tmdbv3api import TMDb
-from multiprocessing import Lock
+import time
+from multiprocessing import Process
 
 
 def get_movie(item):
 
-    global queue
+    global pipe
 
     watched_id = str(item['id']) # Unique Watched id, unique for any item
     trakt_id = item['movie']['ids']['trakt'] # Unique movie trakt id
@@ -75,23 +74,20 @@ def get_movie(item):
 
         
 
-        queue.send([movie.add_to_db, []])
+        pipe.send([movie.add_to_db, []])
 
         for person in cast:
-            queue.send([person.add_to_db, [tmdb_id, 'movie']])
-            pass
+            pipe.send([person.add_to_db, [tmdb_id, 'movie']])
             
         for person in crew:
-            queue.send([person.add_to_db, [tmdb_id, 'movie']])
-            pass
-
+            pipe.send([person.add_to_db, [tmdb_id, 'movie']])
+            
         for studio in studios:
-            queue.send([studio.add_to_db, []])
-            pass
+            pipe.send([studio.add_to_db, []])
         
 
     elif watched_id not in existed.watched_ids:
-        queue.send([existed.update, [watched_id, watched_at]])
+        pipe.send([existed.update, [watched_id, watched_at]])
         
 
 
@@ -145,7 +141,7 @@ def get_tv(item):
 
 
 def get_episode(item):
-    global queue
+    global pipe
 
     trakt_id = item['episode']['ids']['trakt']
     watched_id = str(item['id']) # Unique Watched id, unique for any item
@@ -191,69 +187,25 @@ def get_episode(item):
         )
 
         
-        queue.send([episode.add_to_db, []])
+        pipe.send([episode.add_to_db, []])
 
         for person in cast:
-            queue.send([person.add_to_db, [tmdb_show_id, 'episode']])
+            pipe.send([person.add_to_db, [tmdb_show_id, 'episode']])
                 
         for person in crew:
-            queue.send([person.add_to_db, [tmdb_show_id, 'episode']])
+            pipe.send([person.add_to_db, [tmdb_show_id, 'episode']])
 
     elif watched_id not in existed.watched_ids:
-        queue.send([existed.update, [watched_id, watched_at]])
+        pipe.send([existed.update, [watched_id, watched_at]])
         
         
-
-
 def trakt_history_page(item):
     if item['type'] == 'movie':
         get_movie(item)
     if item['type'] == 'episode':
         get_episode(item)
 
-
-engine = create_engine("sqlite:///database.db")
-SQLModel.metadata.create_all(engine)
-
-
-# tmdb = TMDb()
-# tmdb.api_key = '***REMOVED***'
-# trakt_CLIENT_ID = '***REMOVED***'
-
-username = "***REMOVED***"
-client_id ='***REMOVED***'
-client_secret = '***REMOVED***'
-main.authenticate(username, client_id=client_id, client_secret=client_secret)
-
-
-import time 
-
-aa = time.time()
-
-from multiprocessing import Process
-import multiprocessing
-from multiprocessing import Pool
-from joblib import Parallel, delayed
-from pebble import ThreadPool
-
-def run_parallely(fn, items):
-    return Parallel(n_jobs=10, backend='threading')(delayed(fn)(item) for item in items)
-
-#queue = multiprocessing.Queue()
-queue, child_conn = multiprocessing.Pipe()
-from multiprocessing import Lock
-lock = Lock()
-import concurrent
-
-url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
-data = CORE._handle_request(method='get', url=url)
-
-total_movies = data['movies']['plays']
-total_episodes = data['episodes']['plays']
-
-def fxn1():
-    session = Session(engine)
-    #with ThreadPool(max_workers=10) as pool:
+def process_get_data():
     #TODO: with pebble but limit=50 or higher
     with WorkerPool(n_jobs=10) as pool:
         page = 1
@@ -261,51 +213,54 @@ def fxn1():
             url = urljoin(BASE_URL, f"users/ahmedazim7804/history?limit=50&page={page}")
             data = CORE._handle_request(method='get', url=url)
 
-            #print(data)
             if (page % 5 == 0):
                 logger.warning(f"Sleeping for 1 second : Page {page}")
                 time.sleep(1)
 
-            #executor.map(trakt_history_page, data)
             data = make_single_arguments(data, generator=False)
-
-            # current_movies = sum(session.exec(select(Movie.plays)).all()) #only for pebble
-            # current_episodes = sum(session.exec(select(Episode.plays)).all())
-            # if total_movies <= current_movies and total_episodes <= current_episodes:
-            #     print(current_movies, current_episodes)
-            #     queue.send(['stop'])
-            #     break
 
             if not data:
                 logger.error(f"COMPLETED")
-                queue.send(['stop'])
+                pipe.send(['stop'])
                 break
 
             pool.map(trakt_history_page, data)
 
             page += 1
 
-
-        # with ProcessPoolExecutor(max_workers=10) as executor:
-        #     executor.map(trakt_history_page, data)
-        #pool.map(trakt_history_page, data)
-
-        #run_parallely(trakt_history_page, data)
-
-def fxn2(queue):
+def process_add_data(conn):
     while True:
         try:
-            fxn, args = queue.recv()
+            fxn, args = conn.recv()
             fxn(*args)
         except:
             break
 
-p1 = Process(target=fxn1)
-p2 = Process(target=fxn2, args=(child_conn,))
-p1.start()
-p2.start()
-p1.join()
-p2.join()
 
+if __name__ == '__main__':
 
-print(time.time()-aa)
+start_time = time.time()
+    engine = create_engine("sqlite:///database.db")
+    SQLModel.metadata.create_all(engine)
+    
+    username = "***REMOVED***"
+    client_id ='***REMOVED***'
+    client_secret = '***REMOVED***'
+    main.authenticate(username, client_id=client_id, client_secret=client_secret)
+
+    pipe, child_conn = multiprocessing.Pipe()
+
+    url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
+    data = CORE._handle_request(method='get', url=url)
+
+    total_movies = data['movies']['plays']
+    total_episodes = data['episodes']['plays']
+
+    p1 = Process(target=process_get_data)
+    p2 = Process(target=process_add_data, args=(child_conn,))
+    p1.start()
+    p2.start()
+    p1.join()
+    p2.join()
+
+    print(time.time()-start_time)
