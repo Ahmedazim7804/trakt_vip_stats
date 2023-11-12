@@ -14,7 +14,8 @@ TMDbEpisode = tmdbv3api.Episode()
 
 from sqlmodel import create_engine, Session, select
 class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
-    tmdb_id : str = Field(primary_key=True)
+    trakt_id : str = Field(primary_key=True)
+    tmdb_id : str
     episode_title : str
     show_title : str
     season : int
@@ -22,7 +23,8 @@ class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
     plays : int = Field(default=1)
     rating : Optional[int] = Field(default=0)
     tmdb_show_id : int
-    watched_at : List[str] = Field(sa_column=Column(JSON)) 
+    watched_at : List[str] = Field(sa_column=Column(JSON))
+    watched_ids : List[str] = Field(sa_column=Column(JSON)) 
     runtime : int
     cast : List[int] = Field(sa_column=Column(JSON))
     crew : List[int] = Field(sa_column=Column(JSON))
@@ -36,8 +38,19 @@ class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
                 session.add(self)
                 session.commit()
             else:
+                existed.watched_at = [*existed.watched_at, *self.watched_at]
+                existed.watched_ids = [*existed.watched_ids, *self.watched_ids]
                 existed.plays = existed.plays + 1
         
+            session.commit()
+    
+    def update(self, watched_id, watched_at):
+        engine = create_engine("sqlite:///database.db")
+        with Session(engine) as session:
+            self.watched_ids = [*self.watched_ids, watched_id]
+            self.watched_at = [*self.watched_at, watched_at]
+            self.plays += 1
+            session.add(self)
             session.commit()
 
 class EpisodeData:
