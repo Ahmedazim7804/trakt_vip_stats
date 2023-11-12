@@ -10,6 +10,8 @@ from mpire import WorkerPool
 from mpire.utils import make_single_arguments
 import time
 from multiprocessing import Process
+import multiprocessing
+from tqdm import tqdm
 
 
 def get_movie(item):
@@ -206,7 +208,19 @@ def trakt_history_page(item):
         get_episode(item)
 
 def process_get_data():
+
+    url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
+    data = CORE._handle_request(method='get', url=url)
+
+    total_movies = data['movies']['plays']
+    total_episodes = data['episodes']['plays']
+
+    session = Session(engine)
+
     #TODO: with pebble but limit=50 or higher
+    movies_pbar = tqdm(total=total_movies)
+    episode_pbar = tqdm(total=total_episodes)
+    
     with WorkerPool(n_jobs=10) as pool:
         page = 1
         while True:
@@ -219,9 +233,17 @@ def process_get_data():
 
             data = make_single_arguments(data, generator=False)
 
+            movies_count = sum(session.exec(select(Movie.plays)).all())
+            episode_count = sum(session.exec(select(Episode.plays)).all())
+
+            movies_pbar.update(movies_count - movies_pbar.n)
+            episode_pbar.update(episode_count - episode_pbar.n)
+
             if not data:
                 logger.error(f"COMPLETED")
                 pipe.send(['stop'])
+                movies_pbar.close()
+                episode_pbar.close()
                 break
 
             pool.map(trakt_history_page, data)
@@ -239,7 +261,11 @@ def process_add_data(conn):
 
 if __name__ == '__main__':
 
-start_time = time.time()
+
+    logger_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> [<level>{level: ^12}</level>] <level>{message}</level>"
+    logger.configure(handlers=[dict(sink=lambda msg: tqdm.write(msg, end=''), format=logger_format, colorize=True)])
+
+    start_time = time.time()
     engine = create_engine("sqlite:///database.db")
     SQLModel.metadata.create_all(engine)
     
@@ -249,12 +275,6 @@ start_time = time.time()
     main.authenticate(username, client_id=client_id, client_secret=client_secret)
 
     pipe, child_conn = multiprocessing.Pipe()
-
-    url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
-    data = CORE._handle_request(method='get', url=url)
-
-    total_movies = data['movies']['plays']
-    total_episodes = data['episodes']['plays']
 
     p1 = Process(target=process_get_data)
     p2 = Process(target=process_add_data, args=(child_conn,))

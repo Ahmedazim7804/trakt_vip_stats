@@ -2,11 +2,9 @@ from tqdm import tqdm
 from time import sleep
 
 
-count = 56
-
-with tqdm(total=count) as pbar:
-    aa = 0
-    while aa < count:
-        sleep(0.1)
-        pbar.update(1)
-        aa += 1
+pbar = tqdm(total=56)
+pbar.update(36)
+pbar.refresh()
+sleep(2)
+pbar.update(37 - pbar.n)
+sleep(2)
