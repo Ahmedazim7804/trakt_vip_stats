@@ -33,7 +33,7 @@ class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
     def add_to_db(self):
         engine = create_engine("sqlite:///database.db")
         with Session(engine) as session:
-            existed = session.exec(select(Episode).where(Episode.tmdb_id == self.tmdb_id)).first()
+            existed = session.exec(select(Episode).where(Episode.trakt_id == self.trakt_id)).first()
             if not existed:
                 session.add(self)
                 session.commit()

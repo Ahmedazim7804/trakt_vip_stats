@@ -155,7 +155,6 @@ def get_episode(item):
         existed = session.exec(select(Episode).where(Episode.trakt_id == trakt_id)).first()
     
     if not existed:
-
         logger.info(f"Getting Episode trakt_id={trakt_id} Data and adding to Database")
 
         tmdb_id = item['episode']['ids']['tmdb']
