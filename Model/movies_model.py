@@ -168,6 +168,12 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True)
             self.plays = self.plays + 1
             session.add(self)
             session.commit()
+    
+    def set_rating(self, rating):
+        with Session(engine) as session:
+            self.rating = int(rating)
+            session.add(self)
+            session.commit()
 
         
 

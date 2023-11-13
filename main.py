@@ -5,6 +5,7 @@ import trakt.core
 from trakt.core import CORE
 import get_movie_history
 import get_episode_history
+import get_ratings_data
 from multiprocessing import Process, Pipe
 from sqlmodel import SQLModel, create_engine
 from loguru import logger
@@ -36,7 +37,7 @@ def authenticate(username : str, client_id : str, client_secret : str):
     else:
         trakt.init(username, client_id=client_id, client_secret=client_secret, store=True)
 
-def Multiprocess(fxn, add_to_db_fxn, progressBar, logging=True):
+def Multiprocess(fxn, add_to_db_fxn, progressBar):
     pipe, conn = Pipe()
     pbar_pipe, pbar_conn = Pipe()
 
@@ -60,16 +61,24 @@ authenticate(username, client_id=client_id, client_secret=client_secret)
 engine = create_engine("sqlite:///database.db")
 SQLModel.metadata.create_all(engine)
 
-logger.disable('get_movie_history')
-Multiprocess(
-    fxn=get_movie_history.process_get_history,
-    add_to_db_fxn=get_movie_history.process_add_data,
-    progressBar=get_movie_history.progress_bar
-)
+# logger.disable('get_movie_history')
+# Multiprocess(
+#     fxn=get_movie_history.process_get_history,
+#     add_to_db_fxn=get_movie_history.process_add_data,
+#     progressBar=get_movie_history.progress_bar
+# )
 
-logger.disable('get_episode_history')
-Multiprocess(
-    fxn=get_episode_history.process_get_history,
-    add_to_db_fxn=get_episode_history.process_add_data,
-    progressBar=get_episode_history.progress_bar
-)
+# logger.disable('get_episode_history')
+# Multiprocess(
+#     fxn=get_episode_history.process_get_history,
+#     add_to_db_fxn=get_episode_history.process_add_data,
+#     progressBar=get_episode_history.progress_bar
+# )
+
+# Multiprocess(
+#     fxn=get_ratings_data.process_get_ratings,
+#     add_to_db_fxn=get_ratings_data.process_add_data,
+#     progressBar=get_ratings_data.progress_bar
+# )
+
+
