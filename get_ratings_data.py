@@ -1,9 +1,9 @@
 from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
 from sqlmodel import SQLModel, create_engine, Session, select
-from movies_model import Movie
-from shows_model import TV
-from episode_model import Episode
+from Model.movies_model import Movie
+from Model.shows_model import TV
+from Model.episode_model import Episode
 import main
 from loguru import logger
 from mpire import WorkerPool

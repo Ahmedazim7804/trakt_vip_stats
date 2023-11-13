@@ -1,7 +1,7 @@
 from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
-from movies_model import Movie, MovieData, Cast, Studio, Crew
-from episode_model import Episode, EpisodeData
+from Model.movies_model import Movie, MovieData, Cast, Studio, Crew
+from Model.episode_model import Episode, EpisodeData
 from sqlmodel import SQLModel, create_engine, Session, select
 import main
 from loguru import logger

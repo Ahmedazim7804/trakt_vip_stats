@@ -5,7 +5,7 @@ import tmdbv3api
 from operator import itemgetter
 from tmdbv3api.exceptions import TMDbException
 from loguru import logger
-from movies_model import Cast, Crew
+from Model.movies_model import Cast, Crew
 from sqlmodel import create_engine, Session, select
 
 tmdb = TMDb()
