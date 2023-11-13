@@ -10,77 +10,68 @@ from tqdm import tqdm
 
 class ListItem(SQLModel):
     trakt_id : str = Field(primary_key=True)
-    imdb_id : str
-    tmdb_id : str
-    title : str
-    year : str
-    rank : str
+    imdb_id : Optional[str]
+    tmdb_id : Optional[str]
+    title : Optional[str]
+    year : Optional[str]
+    rank : Optional[str]
 
 class Imdb250Movies(ListItem, table=True, arbitrary_types_allowed=True):
 
     @staticmethod
     def add_list_to_db(list):
-        with tqdm(total=len(list)) as pbar:
-            with Session(engine) as session:
-                for item in list:
-                    rank = item['rank']
-                    title, year = itemgetter('title', 'year')(item['movie'])
-                    trakt, imdb, tmdb = itemgetter('trakt', 'imdb', 'tmdb')(item['movie']['ids'])
+        with Session(engine) as session:
+            for item in list:
+                rank = item['rank']
+                title, year = itemgetter('title', 'year')(item['movie'])
+                trakt, imdb, tmdb = itemgetter('trakt', 'imdb', 'tmdb')(item['movie']['ids'])
 
-                    existed = session.exec(select(Imdb250Movies).where(Imdb250Movies.trakt_id == trakt)).first()
+                existed = session.exec(select(Imdb250Movies).where(Imdb250Movies.trakt_id == trakt)).first()
 
-                    if not existed:
-                        movie = Imdb250Movies(
-                            rank=rank,
-                            title=title,
-                            year=year,
-                            trakt_id=trakt,
-                            imdb_id=imdb,
-                            tmdb_id=tmdb
-                        )
+                if not existed:
+                    movie = Imdb250Movies(
+                        rank=rank,
+                        title=title,
+                        year=year,
+                        trakt_id=trakt,
+                        imdb_id=imdb,
+                        tmdb_id=tmdb
+                    )
 
-                        session.add(movie)
-                    
-                    pbar.update(1)
+                    session.add(movie)
 
-                else:
-                    session.commit()
-                    pbar.close()
+            else:
+                session.commit()
 
 class RollingStone100Shows(ListItem, table=True, arbitrary_types_allowed=True):
     @staticmethod
     def add_list_to_db(list):
-        with tqdm(total=len(list)) as pbar:
-            with Session(engine) as session:
-                for item in list:
-                    rank = item['rank']
-                    title, year = itemgetter('title', 'year')(item['show'])
-                    trakt, imdb, tmdb = itemgetter('trakt', 'imdb', 'tmdb')(item['show']['ids'])
+        with Session(engine) as session:
+            for item in list:
+                rank = item['rank']
+                title, year = itemgetter('title', 'year')(item['show'])
+                trakt, imdb, tmdb = itemgetter('trakt', 'imdb', 'tmdb')(item['show']['ids'])
 
-                    existed = session.exec(select(RollingStone100Shows).where(RollingStone100Shows.trakt_id == trakt)).first()
+                existed = session.exec(select(RollingStone100Shows).where(RollingStone100Shows.trakt_id == trakt)).first()
 
-                    if not existed:
-                        movie = RollingStone100Shows(
-                            rank=rank,
-                            title=title,
-                            year=year,
-                            trakt_id=trakt,
-                            imdb_id=imdb,
-                            tmdb_id=tmdb
-                        )
+                if not existed:
+                    movie = RollingStone100Shows(
+                        rank=rank,
+                        title=title,
+                        year=year,
+                        trakt_id=trakt,
+                        imdb_id=imdb,
+                        tmdb_id=tmdb
+                    )
 
-                        session.add(movie)
-
-                    pbar.update(1)
-                else:
-                    session.commit()
-                    pbar.close()
+                    session.add(movie)
+            else:
+                session.commit()
 
 
 class Imdb250Shows(ListItem, table=True, arbitrary_types_allowed=True):
     @staticmethod
     def add_list_to_db(list):
-        with tqdm(total=len(list)) as pbar:
             with Session(engine) as session:
                 for item in list:
                     rank = item['rank']
@@ -100,17 +91,13 @@ class Imdb250Shows(ListItem, table=True, arbitrary_types_allowed=True):
                         )
 
                         session.add(movie)
-                        
-                    pbar.update(1)
                 else:
                     session.commit()
-                    pbar.close()
 
 
 class Trakt250Movies(ListItem, table=True, arbitrary_types_allowed=True):
     @staticmethod
     def add_list_to_db(list):
-        with tqdm(total=len(list)) as pbar:
             with Session(engine) as session:
                 for item in list:
                     rank = item['rank']
@@ -130,17 +117,13 @@ class Trakt250Movies(ListItem, table=True, arbitrary_types_allowed=True):
                         )
 
                         session.add(movie)
-
-                    pbar.update(1)
                 else:
                     session.commit()
-                    pbar.close()
 
 
 class Trakt250Shows(ListItem, table=True, arbitrary_types_allowed=True):
     @staticmethod
     def add_list_to_db(list):
-        with tqdm(total=len(list)) as pbar:
             with Session(engine) as session:
                 for item in list:
                     rank = item['rank']
@@ -160,41 +143,34 @@ class Trakt250Shows(ListItem, table=True, arbitrary_types_allowed=True):
                         )
 
                         session.add(movie)
-
-                    pbar.update(1)
                 else:
                     session.commit()
-                    pbar.close()
 
 
 class Reddit250Movies(ListItem, table=True, arbitrary_types_allowed=True):
     @staticmethod
     def add_list_to_db(list):
-        with tqdm(total=len(list)) as pbar:
-            with Session(engine) as session:
-                for item in list:
-                    rank = item['rank']
-                    title, year = itemgetter('title', 'year')(item['movie'])
-                    trakt, imdb, tmdb = itemgetter('trakt', 'imdb', 'tmdb')(item['movie']['ids'])
+        with Session(engine) as session:
+            for item in list:
+                rank = item['rank']
+                title, year = itemgetter('title', 'year')(item['movie'])
+                trakt, imdb, tmdb = itemgetter('trakt', 'imdb', 'tmdb')(item['movie']['ids'])
 
-                    existed = session.exec(select(Reddit250Movies).where(Reddit250Movies.trakt_id == trakt)).first()
-                    
-                    if not existed:
-                        movie = Reddit250Movies(
-                            rank=rank,
-                            title=title,
-                            year=year,
-                            trakt_id=trakt,
-                            imdb_id=imdb,
-                            tmdb_id=tmdb
-                        )
+                existed = session.exec(select(Reddit250Movies).where(Reddit250Movies.trakt_id == trakt)).first()
+                
+                if not existed:
+                    movie = Reddit250Movies(
+                        rank=rank,
+                        title=title,
+                        year=year,
+                        trakt_id=trakt,
+                        imdb_id=imdb,
+                        tmdb_id=tmdb
+                    )
 
-                        session.add(movie)
-
-                    pbar.update(1)
-                else:
-                    session.commit()
-                    pbar.close()
+                    session.add(movie)
+            else:
+                session.commit()
 
 engine = create_engine("sqlite:///database.db")
 SQLModel.metadata.create_all(engine)
