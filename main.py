@@ -3,6 +3,11 @@ from os import environ, path, makedirs
 import platform
 import trakt.core
 from trakt.core import CORE
+import get_movie_history
+import get_episode_history
+from multiprocessing import Process, Pipe
+from sqlmodel import SQLModel, create_engine
+from loguru import logger
 
 def check_config():
     if "XDG_DATA_HOME" in environ:
@@ -30,3 +35,41 @@ def authenticate(username : str, client_id : str, client_secret : str):
         CORE._bootstrap()
     else:
         trakt.init(username, client_id=client_id, client_secret=client_secret, store=True)
+
+def Multiprocess(fxn, add_to_db_fxn, progressBar, logging=True):
+    pipe, conn = Pipe()
+    pbar_pipe, pbar_conn = Pipe()
+
+    process1 = Process(target=fxn, args=(pipe, pbar_pipe))
+    process2 = Process(target=add_to_db_fxn, args=(conn,))
+    process3 = Process(target=progressBar, args=(pbar_conn,))
+
+    process1.start()
+    process2.start()
+    process3.start()
+
+    process1.join()
+    process2.join()
+    process3.join()
+
+username = "***REMOVED***"
+client_id ='***REMOVED***'
+client_secret = '***REMOVED***'
+authenticate(username, client_id=client_id, client_secret=client_secret)
+
+engine = create_engine("sqlite:///database.db")
+SQLModel.metadata.create_all(engine)
+
+logger.disable('get_movie_history')
+Multiprocess(
+    fxn=get_movie_history.process_get_history,
+    add_to_db_fxn=get_movie_history.process_add_data,
+    progressBar=get_movie_history.progress_bar
+)
+
+logger.disable('get_episode_history')
+Multiprocess(
+    fxn=get_episode_history.process_get_history,
+    add_to_db_fxn=get_episode_history.process_add_data,
+    progressBar=get_episode_history.progress_bar
+)

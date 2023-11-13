@@ -2,7 +2,6 @@ from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
 from Model.movies_model import Movie, MovieData, Cast, Studio, Crew
 from sqlmodel import SQLModel, create_engine, Session, select
-import main
 from loguru import logger
 from mpire import WorkerPool
 from mpire.utils import make_single_arguments
@@ -12,9 +11,12 @@ import multiprocessing
 from tqdm import tqdm
 
 
-def get_movie(item):
+engine = create_engine("sqlite:///database.db")
 
-    global pipe
+
+def get_movie(pipes, item):
+
+    pipe, pbar_pipe = pipes
 
     watched_id = str(item['id']) # Unique Watched id, unique for any item
     trakt_id = item['movie']['ids']['trakt'] # Unique movie trakt id
@@ -33,7 +35,7 @@ def get_movie(item):
         imdb_id = item['movie']['ids']['imdb']
         watched_ids = [watched_id]
         watched_at = [watched_at]
-        rating = item['rating'] if 'rating' in item.keys() else 0 #FIXME:
+        rating = item['rating'] if 'rating' in item.keys() else 0
         plays = 1 #TODO: make plays=1 default in model.
 
         movieData = MovieData(tmdb_id=tmdb_id)
@@ -72,8 +74,6 @@ def get_movie(item):
             released_year=released_year,
         )
 
-        
-
         pipe.send([movie.add_to_db, []])
 
         for person in cast:
@@ -89,18 +89,14 @@ def get_movie(item):
     elif watched_id not in existed.watched_ids:
         pipe.send([existed.update, [watched_id, watched_at]])
     
-    global pbar_pipe
     pbar_pipe.send(True)
                 
 
-def process_get_history():
+def process_get_history(pipe, pbar):
 
     #TODO: with pebble but limit=50 or higher
     
-    logger_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> [<level>{level: ^12}</level>] <level>{message}</level>"
-    logger.configure(handlers=[dict(sink=lambda msg: tqdm.write(msg, end=''), format=logger_format, colorize=True)])
-    
-    with WorkerPool(n_jobs=10) as pool:
+    with WorkerPool(n_jobs=10, shared_objects=(pipe, pbar)) as pool:
         page = 1
         while True:
             url = urljoin(BASE_URL, f"users/ahmedazim7804/history/movies?limit=50&page={page}")
@@ -115,7 +111,7 @@ def process_get_history():
             if not data:
                 logger.error(f"COMPLETED")
                 pipe.send(['stop'])
-                pbar_pipe.send(False)
+                pbar.send(False)
                 break
 
             pool.map(get_movie, data)
@@ -131,9 +127,8 @@ def process_add_data(conn):
         except:
             break
 
+
 def progress_bar(conn):
-    logger_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> [<level>{level: ^12}</level>] <level>{message}</level>"
-    logger.configure(handlers=[dict(sink=lambda msg: tqdm.write(msg, end=''), format=logger_format, colorize=True)])
 
     url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
     data = CORE._handle_request(method='get', url=url)
@@ -154,7 +149,7 @@ def progress_bar(conn):
 
 if __name__ == '__main__':
 
-
+    import main
     logger_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> [<level>{level: ^12}</level>] <level>{message}</level>"
     logger.configure(handlers=[dict(sink=lambda msg: tqdm.write(msg, end=''), format=logger_format, colorize=True)])
 

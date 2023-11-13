@@ -3,7 +3,6 @@ from trakt.core import CORE, BASE_URL
 from Model.movies_model import Movie, MovieData, Cast, Studio, Crew
 from Model.episode_model import Episode, EpisodeData
 from sqlmodel import SQLModel, create_engine, Session, select
-import main
 from loguru import logger
 from mpire import WorkerPool
 from mpire.utils import make_single_arguments
@@ -13,8 +12,12 @@ import multiprocessing
 from tqdm import tqdm
 
 
-def get_episode(item):
-    global pipe
+engine = create_engine("sqlite:///database.db")
+
+
+def get_episode(pipes, item):
+    
+    pipe, pbar_pipe = pipes
 
     trakt_id = item['episode']['ids']['trakt']
     watched_id = str(item['id']) # Unique Watched id, unique for any item
@@ -71,20 +74,14 @@ def get_episode(item):
     elif watched_id not in existed.watched_ids:
         pipe.send([existed.update, [watched_id, watched_at]])
 
+    pbar_pipe.send(True)
 
-def process_get_history():
 
-    url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
-    data = CORE._handle_request(method='get', url=url)
-
-    total_episodes = data['episodes']['plays']
-
-    session = Session(engine)
+def process_get_history(pipe, pbar):
 
     #TODO: with pebble but limit=50 or higher
-    episode_pbar = tqdm(total=total_episodes)
     
-    with WorkerPool(n_jobs=10) as pool:
+    with WorkerPool(n_jobs=10, shared_objects=(pipe, pbar)) as pool:
         page = 1
         while True:
             url = urljoin(BASE_URL, f"users/ahmedazim7804/history/episodes?limit=50&page={page}")
@@ -96,14 +93,10 @@ def process_get_history():
 
             data = make_single_arguments(data, generator=False)
 
-            episode_count = sum(session.exec(select(Episode.plays)).all())
-
-            episode_pbar.update(episode_count - episode_pbar.n)
-
             if not data:
                 logger.error(f"COMPLETED")
                 pipe.send(['stop'])
-                episode_pbar.close()
+                pbar.send(False)
                 break
 
             pool.map(get_episode, data)
@@ -119,9 +112,28 @@ def process_add_data(conn):
         except:
             break
 
+def progress_bar(conn):
+
+    url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
+    data = CORE._handle_request(method='get', url=url)
+    total_episodes = data['episodes']['plays']
+    movies_pbar = tqdm(total=total_episodes)
+
+    while True:
+        try:
+            bool = conn.recv()
+            if bool:
+                movies_pbar.update(1)
+            else:
+                movies_pbar.close()
+                break
+        except:
+            break
+
 
 if __name__ == '__main__':
 
+    import main
 
     logger_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> [<level>{level: ^12}</level>] <level>{message}</level>"
     logger.configure(handlers=[dict(sink=lambda msg: tqdm.write(msg, end=''), format=logger_format, colorize=True)])
