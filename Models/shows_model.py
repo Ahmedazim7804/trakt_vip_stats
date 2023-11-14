@@ -36,6 +36,7 @@ class Network(SQLModel, table=True, arbitrary_types_allowed=True):
 
 class TV(SQLModel, table=True, arbitrary_types_allowed=True):
     trakt_id: int = Field(primary_key=True)
+    tmdb_id: str
     title: str
     episode_plays: int
     released_year: int

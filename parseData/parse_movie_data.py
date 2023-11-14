@@ -8,7 +8,7 @@ from Models.shows_model import TV
 from datetime import datetime, timezone
 
 
-def time_since_first_play():
+def time_of_oldest_watched_movie():
     engine = create_engine("sqlite:///database.db")
 
     earliest = datetime.now(tz=timezone.utc)
@@ -24,6 +24,13 @@ def time_since_first_play():
                 watched_at = datetime.fromisoformat(watched_at)
                 if watched_at < earliest:
                     earliest = watched_at
+    
+    return earliest
+
+
+def time_since_first_play():
+    
+    earliest = time_of_oldest_watched_movie()
     
     days : float = (datetime.now(tz=timezone.utc) - earliest).days
     months : float = (days / 30.4375)

@@ -38,6 +38,7 @@ def get_tv(pipes, item):
 
         show = TV(
             trakt_id=trakt_id,
+            tmdb_id=tmdb_id,
             title=title,
             episode_plays=episode_plays,
             released_year=released_year,

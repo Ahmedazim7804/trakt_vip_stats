@@ -39,7 +39,7 @@ def get_episode(pipes, item):
             tmdb_show_id=tmdb_show_id, season=season, episode=episode
         )
 
-        runtime = episodeData.runtime()
+        runtime = episodeData.runtime() #FIXME: Some episode do not have runtime in tmdb, use standard or avg. runtime of their show for them
 
         cast = episodeData.cast()
         cast_ids = [person.id for person in cast]
