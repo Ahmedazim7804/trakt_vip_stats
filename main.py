@@ -3,11 +3,11 @@ from os import environ, path, makedirs
 import platform
 import trakt.core
 from trakt.core import CORE
-import get_movie_history
-import get_tv_history
-import get_episode_history
-import get_ratings_data
-import get_other_data
+import get_data.get_movie_history as get_movie_history
+import get_data.get_tv_history as get_tv_history
+import get_data.get_episode_history as get_episode_history
+import get_data.get_ratings_data as get_ratings_data
+import get_data.get_other_data as get_other_data
 from multiprocessing import Process, Pipe
 from sqlmodel import SQLModel, create_engine
 from loguru import logger
