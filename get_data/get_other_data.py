@@ -1,96 +1,44 @@
+from trakt.core import BASE_URL, CORE
 from urllib.parse import urljoin
-from trakt.core import CORE, BASE_URL
-from tqdm import tqdm
-from Models.list_model import (
-    Trakt250Movies,
-    Imdb250Movies,
-    Reddit250Movies,
-    MostPlayedMovies,
-)
-from Models.list_model import (
-    Trakt250Shows,
-    Imdb250Shows,
-    RollingStone100Shows,
-    MostPlayedShows,
-)
 
+def all_time_stats():
 
-def get_list(list_name):
-    all_data = []
+    def get_comments():
+        page = 1
+        comments = 0
+        while True:
+            url = urljoin(BASE_URL, f'users/lish408/comments/all/all?include_replies=False&page={page}')
+            data = CORE._handle_request(url=url, method='get')
 
-    page = 1
-
-    while True:
-        url = urljoin(BASE_URL, f"lists/{list_name}/items?limit=250&page={page}")
-        data = CORE._handle_request(method="get", url=url)
-
-        if not data:
-            break
-
-        all_data.extend(data)
-        page += 1
-
-    return all_data
-
-
-def top_shows_and_movies_lists(placeholder_pipe, pbar_pipe):
-    imdb_top_250_shows = Imdb250Shows.add_list_to_db(
-        get_list("imdb-top-rated-tv-shows")
-    )
-    pbar_pipe.send(True)
-
-    trakt_top_250_shows = Trakt250Shows.add_list_to_db(
-        get_list("trakt-popular-tv-shows")
-    )
-    pbar_pipe.send(True)
-
-    rollingstone_top_100_shows = RollingStone100Shows.add_list_to_db(
-        get_list("rolling-stone-s-100-greatest-tv-shows-of-all-time")
-    )
-    pbar_pipe.send(True)
-
-    imdb_top_250_movies = Imdb250Movies.add_list_to_db(
-        get_list("imdb-top-rated-movies")
-    )
-    pbar_pipe.send(True)
-
-    trakt_top_250_movies = Trakt250Movies.add_list_to_db(
-        get_list("trakt-popular-movies")
-    )
-    pbar_pipe.send(True)
-
-    reddit_top_250_movies = Reddit250Movies.add_list_to_db(
-        get_list("reddit-top-250-2019-edition")
-    )
-    pbar_pipe.send(True)
-
-    most_played_show_trakt = MostPlayedShows.add_list_to_db(
-        CORE._handle_request(method="get", url="https://api.trakt.tv/shows/played/all")
-    )
-    pbar_pipe.send(True)
-
-    most_played_movies_trakt = MostPlayedMovies.add_list_to_db(
-        CORE._handle_request(method="get", url="https://api.trakt.tv/movies/played/all")
-    )
-    pbar_pipe.send(True)
-
-    pbar_pipe.send(False)
-
-
-def progress_bar(conn):
-    movies_pbar = tqdm(total=8)
-
-    while True:
-        try:
-            bool = conn.recv()
-            if bool:
-                movies_pbar.update(1)
-            else:
-                movies_pbar.close()
+            if not data:
                 break
-        except:
-            break
+                
+            comments += len(data)
 
+            page += 1
+        
+        return comments
 
-def placeholder_add_data(conn):
-    return
+    url = urljoin(BASE_URL, 'users/ahmedazim7804/stats')
+    data = CORE._handle_request(url=url, method='get')
+
+    plays : int = data['movies']['plays'] + data['episodes']['plays']
+    hours : float = round(((data['movies']['minutes'] + data['episodes']['minutes']) / 60), 0)
+    collected : int = data['movies']['collected'] + data['episodes']['collected']
+    ratings : int = data['ratings']['total']
+    lists : int = len(CORE._handle_request(url=urljoin(BASE_URL, 'users/ahmedazim7804/lists'), method='get'))
+    comments : int = get_comments()
+
+    return plays, hours, collected, ratings, lists, comments
+
+if __name__ == '__main__':
+    import sys
+    sys.path.append('/home/ajeem/Development/projects/python/traktData')
+    from main import authenticate
+
+    username = "***REMOVED***"
+    client_id = "***REMOVED***"
+    client_secret = "***REMOVED***"
+    authenticate(username, client_id=client_id, client_secret=client_secret)
+
+    print(all_time_stats())

@@ -7,7 +7,7 @@ import get_data.get_movie_history as get_movie_history
 import get_data.get_tv_history as get_tv_history
 import get_data.get_episode_history as get_episode_history
 import get_data.get_ratings_data as get_ratings_data
-import get_data.get_other_data as get_other_data
+import get_data.get_lists_data as get_lists_data
 from multiprocessing import Process, Pipe
 from sqlmodel import SQLModel, create_engine
 from loguru import logger
@@ -107,9 +107,9 @@ if __name__ == "__main__":
     )
 
     Multiprocess(
-        fxn=get_other_data.top_shows_and_movies_lists,
-        add_to_db_fxn=get_other_data.placeholder_add_data,  # Placeholder function
-        progressBar=get_other_data.progress_bar,
+        fxn=get_lists_data.top_shows_and_movies_lists,
+        add_to_db_fxn=get_lists_data.placeholder_add_data,  # Placeholder function
+        progressBar=get_lists_data.progress_bar,
     )
 
     print(time.time() - aa)
