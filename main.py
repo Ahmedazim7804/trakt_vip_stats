@@ -72,13 +72,15 @@ if __name__ == "__main__":
     engine = create_engine("sqlite:///database.db")
     SQLModel.metadata.create_all(engine)
 
+    '''
+    To only disable info logs, use these lines.
+        # logger.disable("get_movie_history")
+        # logger.disable("get_episode_history")
+        # logger.disable("get_tv_history")
+    '''
 
-    '''
-    Disable info logs
-    '''
-    logger.disable("get_movie_history")
-    logger.disable("get_episode_history")
-    logger.disable("get_tv_history")
+    # Disable all logs.
+    logger.remove()
 
     Multiprocess(
         fxn=get_movie_history.process_get_history,
