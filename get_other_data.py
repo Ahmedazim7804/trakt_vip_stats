@@ -1,8 +1,8 @@
 import requests
 from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
-from Model.list_model import Trakt250Movies, Imdb250Movies, Reddit250Movies
-from Model.list_model import Trakt250Shows, Imdb250Shows, RollingStone100Shows
+from Model.list_model import Trakt250Movies, Imdb250Movies, Reddit250Movies, MostPlayedMovies
+from Model.list_model import Trakt250Shows, Imdb250Shows, RollingStone100Shows, MostPlayedShows
 from tqdm import tqdm
 
 def get_list(list_name):
@@ -42,10 +42,10 @@ def top_shows_and_movies_lists(placeholder_pipe, pbar_pipe):
     reddit_top_250_movies = Reddit250Movies.add_list_to_db(get_list("reddit-top-250-2019-edition"))
     pbar_pipe.send(True)
 
-    most_played_show_trakt = CORE._handle_request(method='get', url="https://api.trakt.tv/shows/played/all")
+    most_played_show_trakt = MostPlayedShows.add_list_to_db(CORE._handle_request(method='get', url="https://api.trakt.tv/shows/played/all"))
     pbar_pipe.send(True)
 
-    most_played_movies_trakt = CORE._handle_request(method='get', url="https://api.trakt.tv/movies/played/all")
+    most_played_movies_trakt = MostPlayedMovies.add_list_to_db(CORE._handle_request(method='get', url="https://api.trakt.tv/movies/played/all"))
     pbar_pipe.send(True)
 
     pbar_pipe.send(False)

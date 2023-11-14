@@ -54,36 +54,43 @@ def Multiprocess(fxn, add_to_db_fxn, progressBar):
     process2.join()
     process3.join()
 
-username = "***REMOVED***"
-client_id ='***REMOVED***'
-client_secret = '***REMOVED***'
-authenticate(username, client_id=client_id, client_secret=client_secret)
 
-engine = create_engine("sqlite:///database.db")
-SQLModel.metadata.create_all(engine)
+if __name__ == '__main__':
+    import time
+    aa = time.time()
+    username = "***REMOVED***"
+    client_id ='***REMOVED***'
+    client_secret = '***REMOVED***'
+    authenticate(username, client_id=client_id, client_secret=client_secret)
 
-logger.disable('get_movie_history')
-Multiprocess(
-    fxn=get_movie_history.process_get_history,
-    add_to_db_fxn=get_movie_history.process_add_data,
-    progressBar=get_movie_history.progress_bar
-)
+    engine = create_engine("sqlite:///database.db")
+    SQLModel.metadata.create_all(engine)
 
-logger.disable('get_episode_history')
-Multiprocess(
-    fxn=get_episode_history.process_get_history,
-    add_to_db_fxn=get_episode_history.process_add_data,
-    progressBar=get_episode_history.progress_bar
-)
+    logger.disable('get_movie_history')
+    logger.disable('get_episode_history')
 
-Multiprocess(
-    fxn=get_ratings_data.process_get_ratings,
-    add_to_db_fxn=get_ratings_data.process_add_data,
-    progressBar=get_ratings_data.progress_bar
-)
+    # Multiprocess(
+    #     fxn=get_movie_history.process_get_history,
+    #     add_to_db_fxn=get_movie_history.process_add_data,
+    #     progressBar=get_movie_history.progress_bar
+    # )
 
-Multiprocess(
-    fxn=get_other_data.top_shows_and_movies_lists,
-    add_to_db_fxn=get_other_data.placeholder_add_data, #Placeholder function
-    progressBar=get_other_data.progress_bar
-)
+    # Multiprocess(
+    #     fxn=get_episode_history.process_get_history,
+    #     add_to_db_fxn=get_episode_history.process_add_data,
+    #     progressBar=get_episode_history.progress_bar
+    # )
+
+    # Multiprocess(
+    #     fxn=get_ratings_data.process_get_ratings,
+    #     add_to_db_fxn=get_ratings_data.process_add_data,
+    #     progressBar=get_ratings_data.progress_bar
+    # )
+
+    # Multiprocess(
+    #     fxn=get_other_data.top_shows_and_movies_lists,
+    #     add_to_db_fxn=get_other_data.placeholder_add_data, #Placeholder function
+    #     progressBar=get_other_data.progress_bar
+    # )
+
+    print(time.time()-aa)
