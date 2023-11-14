@@ -3,7 +3,6 @@ from typing import List, Optional
 from tmdbv3api import TMDb
 import tmdbv3api
 from operator import itemgetter
-from tmdbv3api.exceptions import TMDbException
 from loguru import logger
 from sqlmodel import create_engine, Session, select
 
@@ -16,46 +15,45 @@ TMDbMovie = tmdbv3api.Movie()
 
 
 class Cast(SQLModel, table=True, arbitrary_types_allowed=True):
-    id : int = Field(primary_key=True)
-    name : Optional[str]
-    gender : Optional[str]
+    id: int = Field(primary_key=True)
+    name: Optional[str]
+    gender: Optional[str]
     image: Optional[str]
-    episode : int = Field(default=0)
-    shows : List[int] = Field(sa_column=Column(JSON), default=[])
-    shows_count : int = Field(default = 0)
-    movies : List[int] = Field(sa_column=Column(JSON), default=[])
-    movies_count : int = Field(default=0)
+    episode: int = Field(default=0)
+    shows: List[int] = Field(sa_column=Column(JSON), default=[])
+    shows_count: int = Field(default=0)
+    movies: List[int] = Field(sa_column=Column(JSON), default=[])
+    movies_count: int = Field(default=0)
 
     def add_to_db(self, tmdb_id, type):
         with Session(engine) as session:
-            existed_person = session.exec(select(Cast).where(Cast.id == self.id)).first()
+            existed_person = session.exec(
+                select(Cast).where(Cast.id == self.id)
+            ).first()
             if not existed_person:
-                if type == 'episode':
+                if type == "episode":
                     self.add_show(tmdb_id)
                     self.add_episode()
-                if type =='movie':
+                if type == "movie":
                     self.add_movie(tmdb_id)
                 session.add(self)
             else:
-                if type == 'episode':
+                if type == "episode":
                     existed_person.add_show(tmdb_id)
                     existed_person.add_episode()
-                if type == 'movie':
+                if type == "movie":
                     existed_person.add_movie(tmdb_id)
                 session.add(existed_person)
 
             session.commit()
-
 
     def add_show(self, show):
         if show not in self.shows:
             self.shows = [*self.shows, show]
             self.shows_count = self.shows_count + 1
 
-    
     def add_episode(self):
         self.episode = self.episode + 1
-
 
     def add_movie(self, movie):
         if movie not in self.movies:
@@ -67,39 +65,41 @@ class Crew(SQLModel, table=True, arbitrary_types_allowed=True):
     id: int = Field(primary_key=True)
     name: str
     dept: str
-    job : Optional[str]
-    image : Optional[str]
-    episode : int = Field(default=0)
-    shows : List[int] = Field(sa_column=Column(JSON), default=[])
-    shows_count : int = Field(default=0)
-    movies : List[int] = Field(sa_column=Column(JSON), default=[])
-    movies_count : int = Field(default=0)
+    job: Optional[str]
+    image: Optional[str]
+    episode: int = Field(default=0)
+    shows: List[int] = Field(sa_column=Column(JSON), default=[])
+    shows_count: int = Field(default=0)
+    movies: List[int] = Field(sa_column=Column(JSON), default=[])
+    movies_count: int = Field(default=0)
 
     def add_to_db(self, tmdb_id, type):
         with Session(engine) as session:
-            existed_person = session.exec(select(Crew).where(Crew.id == self.id)).first()
+            existed_person = session.exec(
+                select(Crew).where(Crew.id == self.id)
+            ).first()
             if not existed_person:
-                if type == 'episode':
+                if type == "episode":
                     self.add_show(tmdb_id)
                     self.add_episode()
-                if type == 'movie':
+                if type == "movie":
                     self.add_movie(tmdb_id)
                 session.add(self)
             else:
-                if type == 'episode':
+                if type == "episode":
                     existed_person.add_show(tmdb_id)
                     existed_person.add_episode()
-                if type == 'movie':
+                if type == "movie":
                     existed_person.add_movie(tmdb_id)
                 session.add(existed_person)
-            
+
             session.commit()
 
     def add_show(self, show):
         if show not in self.shows:
             self.shows = [*self.shows, show]
             self.shows_count = self.shows_count + 1
-    
+
     def add_episode(self):
         self.episode = self.episode + 1
 
@@ -110,26 +110,27 @@ class Crew(SQLModel, table=True, arbitrary_types_allowed=True):
 
 
 class Studio(SQLModel, table=True, arbitrary_types_allowed=True):
-    id : int = Field(primary_key=True)
-    name : Optional[str]
+    id: int = Field(primary_key=True)
+    name: Optional[str]
     country: Optional[str]
     movies: int = Field(default=1)
     image: Optional[str]
 
     def add_to_db(self):
         with Session(engine) as session:
-            existed_studio = session.exec(select(Studio).where(Studio.id == self.id)).first()
+            existed_studio = session.exec(
+                select(Studio).where(Studio.id == self.id)
+            ).first()
             if not existed_studio:
                 session.add(self)
             else:
                 existed_studio.movies = existed_studio.movies + 1
                 session.add(existed_studio)
-            
+
             session.commit()
-        
 
 
-class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True):
+class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode=True):
     id: int
     title: str
     trakt_id: str = Field(primary_key=True)
@@ -150,7 +151,9 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True)
 
     def add_to_db(self):
         with Session(engine) as session:
-            existed = session.exec(select(Movie).where(Movie.tmdb_id == self.tmdb_id)).first()
+            existed = session.exec(
+                select(Movie).where(Movie.tmdb_id == self.tmdb_id)
+            ).first()
             if not existed:
                 session.add(self)
                 session.commit()
@@ -158,9 +161,9 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True)
                 existed.watched_ids = [*existed.watched_ids, *self.watched_ids]
                 existed.watched_at = [*existed.watched_at, *self.watched_at]
                 existed.plays = existed.plays + 1
-            
+
             session.commit()
-    
+
     def update(self, watched_id, watched_at):
         with Session(engine) as session:
             self.watched_at = [*self.watched_at, watched_at]
@@ -168,18 +171,15 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode = True)
             self.plays = self.plays + 1
             session.add(self)
             session.commit()
-    
+
     def set_rating(self, rating):
         with Session(engine) as session:
             self.rating = int(rating)
             session.add(self)
             session.commit()
 
-        
-
 
 class MovieData:
-
     def __init__(self, tmdb_id):
         self.tmdb_id = tmdb_id
 
@@ -187,7 +187,9 @@ class MovieData:
             self.movieDetails = TMDbMovie.details(self.tmdb_id)
             self.movieCredits = TMDbMovie.credits(self.tmdb_id)
         except Exception as e:
-            logger.error(f"TMDb Movie Id : '{self.tmdb_id}', failed to get INFO because {e}")
+            logger.error(
+                f"TMDb Movie Id : '{self.tmdb_id}', failed to get INFO because {e}"
+            )
 
     def genres(self):
         genres = []
@@ -209,19 +211,19 @@ class MovieData:
             logger.debug(f"TMDb Movie Id : '{self.tmdb_id}' Genres are empty")
 
         return genres
-    
+
     def runtime(self):
         runtime = 0
 
         try:
-            runtime = self.movieDetails['runtime']
+            runtime = self.movieDetails["runtime"]
         except (KeyError, AttributeError):
             logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Runtime")
             return runtime
 
         if not (KeyError, AttributeError):
             logger.debug(f"TMDB Movie Id: '{self.tmdb_id}' runtime is 0")
-        
+
         return runtime
 
     def poster(self):
@@ -237,16 +239,13 @@ class MovieData:
     def cast(self):
         cast_list = []
         try:
-            item_cast = self.movieCredits['cast']
+            item_cast = self.movieCredits["cast"]
             for actor in item_cast:
-                name, id, gender, image = itemgetter('name', 'id', 'gender', 'profile_path')(actor)
-                if (gender and image):
-                    cast = Cast(
-                        id=id,
-                        name=name,
-                        gender=gender,
-                        image=image
-                    )
+                name, id, gender, image = itemgetter(
+                    "name", "id", "gender", "profile_path"
+                )(actor)
+                if gender and image:
+                    cast = Cast(id=id, name=name, gender=gender, image=image)
                     cast_list.append(cast)
         except (KeyError, AttributeError):
             logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Cast")
@@ -259,15 +258,17 @@ class MovieData:
             studios_data = self.movieDetails.production_companies
 
             for studio in studios_data:
-                id, name, url, country = itemgetter('id', 'name', 'logo_path', 'origin_country')(studio)
+                id, name, url, country = itemgetter(
+                    "id", "name", "logo_path", "origin_country"
+                )(studio)
 
                 if url:  # Only add Companies which have valid image
-                    studios.append(
-                        Studio(id=id, name=name, image=url, country=country)
-                    )
+                    studios.append(Studio(id=id, name=name, image=url, country=country))
 
         except (KeyError, AttributeError):
-            logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Production Companies")
+            logger.warning(
+                f"TMDb Movie Id : '{self.tmdb_id}' failed to get Production Companies"
+            )
 
         return studios
 
@@ -275,17 +276,19 @@ class MovieData:
         directors = []
         writers = []
         try:
-            all_crew = self.movieCredits['crew']
+            all_crew = self.movieCredits["crew"]
 
             for person in all_crew:
-                id, name, dept, job, image = itemgetter('id', 'name', 'department', 'job', 'profile_path')(person)
+                id, name, dept, job, image = itemgetter(
+                    "id", "name", "department", "job", "profile_path"
+                )(person)
 
-                if person['job'] == 'Director':
+                if person["job"] == "Director":
                     directors.append(
                         Crew(id=id, name=name, dept=dept, job=job, image=image)
                     )
-            
-                if person['department'] == 'Writing':
+
+                if person["department"] == "Writing":
                     writers.append(
                         Crew(id=id, name=name, dept=dept, job=job, image=image)
                     )
@@ -297,9 +300,8 @@ class MovieData:
             logger.debug(f"TMDb Movie Id : '{self.tmdb_id}' Directors List is Empty")
         if not writers:
             logger.debug(f"TMDb Movie Id : '{self.tmdb_id}' Writers List is Empty")
-        
+
         return [*directors, *writers]
-    
 
     def countries(self):
         try:
@@ -308,15 +310,20 @@ class MovieData:
             item_countries = self.movieDetails["production_countries"]
 
             for item_country in item_countries:
-                country = item_country['iso_3166_1']
+                country = item_country["iso_3166_1"]
                 countries.append(country)
 
         except (KeyError, AttributeError):
-            logger.warning(f"TMDb Movie Id : '{self.tmdb_id}' failed to get Production Countries")
+            logger.warning(
+                f"TMDb Movie Id : '{self.tmdb_id}' failed to get Production Countries"
+            )
 
         if not countries:
-            logger.debug(f"TMDb Movie Id : '{self.tmdb_id}' Production Countries List is Empty")
+            logger.debug(
+                f"TMDb Movie Id : '{self.tmdb_id}' Production Countries List is Empty"
+            )
 
         return countries
 
-#print(MovieData('754').runtime())
+
+# print(MovieData('754').runtime())

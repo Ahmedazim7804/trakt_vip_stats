@@ -12,6 +12,7 @@ from multiprocessing import Process, Pipe
 from sqlmodel import SQLModel, create_engine
 from loguru import logger
 
+
 def check_config():
     if "XDG_DATA_HOME" in environ:
         data_dir = environ["XDG_DATA_HOME"]
@@ -27,17 +28,20 @@ def check_config():
 
     if not path.exists(default_cfg_path):
         return False
-    
+
     return True
 
-def authenticate(username : str, client_id : str, client_secret : str):
-       
+
+def authenticate(username: str, client_id: str, client_secret: str):
     trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH
 
     if check_config():
         CORE._bootstrap()
     else:
-        trakt.init(username, client_id=client_id, client_secret=client_secret, store=True)
+        trakt.init(
+            username, client_id=client_id, client_secret=client_secret, store=True
+        )
+
 
 def Multiprocess(fxn, add_to_db_fxn, progressBar):
     pipe, conn = Pipe()
@@ -56,49 +60,50 @@ def Multiprocess(fxn, add_to_db_fxn, progressBar):
     process3.join()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import time
+
     aa = time.time()
     username = "***REMOVED***"
-    client_id ='***REMOVED***'
-    client_secret = '***REMOVED***'
+    client_id = "***REMOVED***"
+    client_secret = "***REMOVED***"
     authenticate(username, client_id=client_id, client_secret=client_secret)
 
     engine = create_engine("sqlite:///database.db")
     SQLModel.metadata.create_all(engine)
 
-    logger.disable('get_movie_history')
-    logger.disable('get_episode_history')
-    logger.disable('get_tv_history.py')
+    logger.disable("get_movie_history")
+    logger.disable("get_episode_history")
+    logger.disable("get_tv_history.py")
 
     Multiprocess(
         fxn=get_movie_history.process_get_history,
         add_to_db_fxn=get_movie_history.process_add_data,
-        progressBar=get_movie_history.progress_bar
+        progressBar=get_movie_history.progress_bar,
     )
 
     Multiprocess(
         fxn=get_tv_history.process_get_history,
         add_to_db_fxn=get_tv_history.process_add_data,
-        progressBar=get_tv_history.progress_bar
+        progressBar=get_tv_history.progress_bar,
     )
 
     Multiprocess(
         fxn=get_episode_history.process_get_history,
         add_to_db_fxn=get_episode_history.process_add_data,
-        progressBar=get_episode_history.progress_bar
+        progressBar=get_episode_history.progress_bar,
     )
 
     Multiprocess(
         fxn=get_ratings_data.process_get_ratings,
         add_to_db_fxn=get_ratings_data.process_add_data,
-        progressBar=get_ratings_data.progress_bar
+        progressBar=get_ratings_data.progress_bar,
     )
 
     Multiprocess(
         fxn=get_other_data.top_shows_and_movies_lists,
-        add_to_db_fxn=get_other_data.placeholder_add_data, #Placeholder function
-        progressBar=get_other_data.progress_bar
+        add_to_db_fxn=get_other_data.placeholder_add_data,  # Placeholder function
+        progressBar=get_other_data.progress_bar,
     )
 
-    print(time.time()-aa)
+    print(time.time() - aa)

@@ -1,35 +1,31 @@
 from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
 from Model.shows_model import TV, TvData
-from sqlmodel import SQLModel, create_engine, Session, select
+from sqlmodel import create_engine, Session, select
 from loguru import logger
 from mpire import WorkerPool
 from mpire.utils import make_single_arguments
-import time
-from multiprocessing import Process
-import multiprocessing
 from tqdm import tqdm
 
 engine = create_engine("sqlite:///database.db")
 
-def get_tv(pipes, item):
 
+def get_tv(pipes, item):
     pipe, pbar_pipe = pipes
 
-    trakt_id = item['show']['ids']['trakt']
+    trakt_id = item["show"]["ids"]["trakt"]
 
     with Session(engine) as session:
         existed = session.exec(select(TV).where(TV.trakt_id == trakt_id)).first()
-    
-    if not existed:
 
+    if not existed:
         logger.info(f"Getting SHOW trakt_id={trakt_id} Data and adding to Database")
 
-        tmdb_id = item['show']['ids']['tmdb']
-        title = item['show']['title']
-        episode_plays = item['plays']
-        released_year = item['show']['year']
-        rating = 0 #FIXME:
+        tmdb_id = item["show"]["ids"]["tmdb"]
+        title = item["show"]["title"]
+        episode_plays = item["plays"]
+        released_year = item["show"]["year"]
+        rating = 0  # FIXME:
 
         tvData = TvData(tmdb_id=tmdb_id)
 
@@ -49,29 +45,28 @@ def get_tv(pipes, item):
             poster=poster,
             genres=genres,
             countries=countries,
-            networks=networs_ids
+            networks=networs_ids,
         )
 
         pipe.send([show.add_to_db, []])
-            
+
         for network in networks:
-            pipe.send([network.add_to_db,[]])
-    
+            pipe.send([network.add_to_db, []])
+
     pbar_pipe.send(True)
 
 
 def process_get_history(pipe, pbar):
-
-    #TODO: with pebble but limit=50 or higher
+    # TODO: with pebble but limit=50 or higher
 
     with WorkerPool(n_jobs=10, shared_objects=(pipe, pbar)) as pool:
         url = urljoin(BASE_URL, f"users/ahmedazim7804/watched/shows")
-        data = CORE._handle_request(method='get', url=url)
+        data = CORE._handle_request(method="get", url=url)
 
         data = make_single_arguments(data, generator=False)
 
         pool.map(get_tv, data)
-    
+
     pipe.send(False)
     pbar.send(False)
 
@@ -87,8 +82,8 @@ def process_add_data(conn):
 
 def progress_bar(conn):
     url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
-    data = CORE._handle_request(method='get', url=url)
-    total_shows = data['shows']['watched']
+    data = CORE._handle_request(method="get", url=url)
+    total_shows = data["shows"]["watched"]
     shows_pbar = tqdm(total=total_shows)
 
     while True:
@@ -101,30 +96,3 @@ def progress_bar(conn):
                 break
         except:
             break
-
-
-if __name__ == '__main__':
-
-
-    logger_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> [<level>{level: ^12}</level>] <level>{message}</level>"
-    logger.configure(handlers=[dict(sink=lambda msg: tqdm.write(msg, end=''), format=logger_format, colorize=True)])
-
-    start_time = time.time()
-    engine = create_engine("sqlite:///database.db")
-    SQLModel.metadata.create_all(engine)
-    
-    username = "***REMOVED***"
-    client_id ='***REMOVED***'
-    client_secret = '***REMOVED***'
-    main.authenticate(username, client_id=client_id, client_secret=client_secret)
-
-    pipe, child_conn = multiprocessing.Pipe()
-
-    p1 = Process(target=process_get_history)
-    p2 = Process(target=process_progress_bar, args=(child_conn,))
-    p1.start()
-    p2.start()
-    p1.join()
-    p2.join()
-
-    print(time.time()-start_time)

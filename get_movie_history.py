@@ -1,13 +1,11 @@
 from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
 from Model.movies_model import Movie, MovieData, Cast, Studio, Crew
-from sqlmodel import SQLModel, create_engine, Session, select
+from sqlmodel import create_engine, Session, select
 from loguru import logger
 from mpire import WorkerPool
 from mpire.utils import make_single_arguments
 import time
-from multiprocessing import Process
-import multiprocessing
 from tqdm import tqdm
 
 
@@ -15,28 +13,26 @@ engine = create_engine("sqlite:///database.db")
 
 
 def get_movie(pipes, item):
-
     pipe, pbar_pipe = pipes
 
-    watched_id = str(item['id']) # Unique Watched id, unique for any item
-    trakt_id = item['movie']['ids']['trakt'] # Unique movie trakt id
-    watched_at = str(item['watched_at'])
+    watched_id = str(item["id"])  # Unique Watched id, unique for any item
+    trakt_id = item["movie"]["ids"]["trakt"]  # Unique movie trakt id
+    watched_at = str(item["watched_at"])
 
     with Session(engine) as session:
         existed = session.exec(select(Movie).where(Movie.id == trakt_id)).first()
-        
-    if not existed:
 
+    if not existed:
         logger.info(f"Getting Movie trakt_id={trakt_id} Data and adding to Database")
 
-        tmdb_id = item['movie']['ids']['tmdb']
-        title = item['movie']['title']
-        released_year = item['movie']['year']
-        imdb_id = item['movie']['ids']['imdb']
+        tmdb_id = item["movie"]["ids"]["tmdb"]
+        title = item["movie"]["title"]
+        released_year = item["movie"]["year"]
+        imdb_id = item["movie"]["ids"]["imdb"]
         watched_ids = [watched_id]
         watched_at = [watched_at]
-        rating = item['rating'] if 'rating' in item.keys() else 0
-        plays = 1 #TODO: make plays=1 default in model.
+        rating = item["rating"] if "rating" in item.keys() else 0
+        plays = 1  # TODO: make plays=1 default in model.
 
         movieData = MovieData(tmdb_id=tmdb_id)
 
@@ -77,32 +73,32 @@ def get_movie(pipes, item):
         pipe.send([movie.add_to_db, []])
 
         for person in cast:
-            pipe.send([person.add_to_db, [tmdb_id, 'movie']])
-            
+            pipe.send([person.add_to_db, [tmdb_id, "movie"]])
+
         for person in crew:
-            pipe.send([person.add_to_db, [tmdb_id, 'movie']])
-            
+            pipe.send([person.add_to_db, [tmdb_id, "movie"]])
+
         for studio in studios:
             pipe.send([studio.add_to_db, []])
-        
 
     elif watched_id not in existed.watched_ids:
         pipe.send([existed.update, [watched_id, watched_at]])
-    
+
     pbar_pipe.send(True)
-                
+
 
 def process_get_history(pipe, pbar):
+    # TODO: with pebble but limit=50 or higher
 
-    #TODO: with pebble but limit=50 or higher
-    
     with WorkerPool(n_jobs=10, shared_objects=(pipe, pbar)) as pool:
         page = 1
         while True:
-            url = urljoin(BASE_URL, f"users/ahmedazim7804/history/movies?limit=50&page={page}")
-            data = CORE._handle_request(method='get', url=url)
+            url = urljoin(
+                BASE_URL, f"users/ahmedazim7804/history/movies?limit=50&page={page}"
+            )
+            data = CORE._handle_request(method="get", url=url)
 
-            if (page % 5 == 0):
+            if page % 5 == 0:
                 logger.warning(f"Sleeping for 1 second : Page {page}")
                 time.sleep(1)
 
@@ -110,7 +106,7 @@ def process_get_history(pipe, pbar):
 
             if not data:
                 logger.error(f"COMPLETED")
-                pipe.send(['stop'])
+                pipe.send(["stop"])
                 pbar.send(False)
                 break
 
@@ -129,10 +125,9 @@ def process_add_data(conn):
 
 
 def progress_bar(conn):
-
     url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
-    data = CORE._handle_request(method='get', url=url)
-    total_movies = data['movies']['plays']
+    data = CORE._handle_request(method="get", url=url)
+    total_movies = data["movies"]["plays"]
     movies_pbar = tqdm(total=total_movies)
 
     while True:
@@ -145,34 +140,3 @@ def progress_bar(conn):
                 break
         except:
             break
-
-
-if __name__ == '__main__':
-
-    import main
-    logger_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> [<level>{level: ^12}</level>] <level>{message}</level>"
-    logger.configure(handlers=[dict(sink=lambda msg: tqdm.write(msg, end=''), format=logger_format, colorize=True)])
-
-    start_time = time.time()
-    engine = create_engine("sqlite:///database.db")
-    SQLModel.metadata.create_all(engine)
-    
-    username = "***REMOVED***"
-    client_id ='***REMOVED***'
-    client_secret = '***REMOVED***'
-    main.authenticate(username, client_id=client_id, client_secret=client_secret)
-
-    pipe, child_conn = multiprocessing.Pipe()
-    pbar_pipe, pbar_conn = multiprocessing.Pipe()
-
-    p1 = Process(target=process_get_history)
-    p2 = Process(target=process_add_data, args=(child_conn,))
-    p3 = Process(target=progress_bar, args=(pbar_conn,))
-    p1.start()
-    p2.start()
-    p3.start()
-    p1.join()
-    p2.join()
-    p3.join()
-
-    print(time.time()-start_time)
