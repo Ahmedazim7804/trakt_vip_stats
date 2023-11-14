@@ -4,7 +4,8 @@ from tmdbv3api import TMDb
 import tmdbv3api
 from operator import itemgetter
 from loguru import logger
-from Model.movies_model import Cast, Crew
+from Models.cast_model import Cast
+from Models.crew_model import Crew
 from sqlmodel import create_engine, Session, select
 
 tmdb = TMDb()

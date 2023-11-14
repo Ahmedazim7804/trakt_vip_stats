@@ -1,13 +1,13 @@
 from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
 from tqdm import tqdm
-from Model.list_model import (
+from Models.list_model import (
     Trakt250Movies,
     Imdb250Movies,
     Reddit250Movies,
     MostPlayedMovies,
 )
-from Model.list_model import (
+from Models.list_model import (
     Trakt250Shows,
     Imdb250Shows,
     RollingStone100Shows,

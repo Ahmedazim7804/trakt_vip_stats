@@ -1,6 +1,6 @@
 from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
-from Model.shows_model import TV, TvData
+from Models.shows_model import TV, TvData
 from sqlmodel import create_engine, Session, select
 from loguru import logger
 from mpire import WorkerPool
