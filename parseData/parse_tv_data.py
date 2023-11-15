@@ -2,9 +2,10 @@ import sys
 sys.path.append('/home/ajeem/Development/projects/python/traktData')
 from trakt.core import BASE_URL, CORE
 from urllib.parse import urljoin
-from sqlmodel import Session, create_engine, select
+from sqlmodel import Session, create_engine, select, col
 from Models.episode_model import Episode
 from Models.shows_model import TV
+from Models.list_model import Trakt250Shows, Imdb250Shows, RollingStone100Shows
 from datetime import datetime, timezone
 import collections
 
@@ -167,7 +168,53 @@ def shows_by_networks():
     return shows
 
 def list_progress():
-    pass
+    with Session(engine) as session:
+        
+        trakt_list = session.exec(select(Trakt250Shows.tmdb_id)).fetchall()
+        imdb_list = session.exec(select(Imdb250Shows.tmdb_id)).fetchall()
+        rolling_list = session.exec(select(RollingStone100Shows.tmdb_id)).fetchall()
+
+        watched_trakt_shows = session.exec(select(TV.tmdb_id).where(TV.tmdb_id.in_(trakt_list))).fetchall()
+        watched_imdb_shows = session.exec(select(TV.tmdb_id).where(TV.tmdb_id.in_(imdb_list))).fetchall()
+        watched_rolling_shows = session.exec(select(TV.tmdb_id).where(TV.tmdb_id.in_(rolling_list))).fetchall()
+
+        watched_trakt_shows = len(watched_trakt_shows)
+        watched_imdb_shows = len(watched_imdb_shows)
+        watched_rolling_shows = len(watched_rolling_shows)
+
+        total_trakt_shows = len(trakt_list)
+        total_imdb_shows = len(imdb_list)
+        total_rolling_shows = len(rolling_list)
+
+    
+    return {
+        'trakt': {'total': total_trakt_shows, 'watched': watched_trakt_shows},
+        'imdb': {'total': total_imdb_shows, 'watched': watched_imdb_shows},
+        'rollingstone' : {'total': total_rolling_shows, 'watched': watched_rolling_shows}
+    }
+        
+        
+
+def highest_rated_shows():
+    
+    with Session(engine) as session:
+        rated_shows = session.exec(select(TV.tmdb_id, TV.rating)).fetchall()
+        rated_shows = sorted(rated_shows, key=lambda x: x[1], reverse=True)[:10]
+        rated_shows = dict(rated_shows)
+
+
+    return rated_shows
+
+def all_ratings():
+
+    ratings = {}
+    with Session(engine) as session:
+        for rating in range(1,11):
+            ratings[rating] = len(session.exec(select(True).where(TV.rating == rating)).fetchall())
+    
+    return ratings
+
+
 
 if __name__ == '__main__':
     import sys
@@ -178,4 +225,4 @@ if __name__ == '__main__':
     # client_id = "***REMOVED***"
     # client_secret = "***REMOVED***"
     # authenticate(username, client_id=client_id, client_secret=client_secret)
-    print(shows_by_networks())
+    print(all_ratings())
