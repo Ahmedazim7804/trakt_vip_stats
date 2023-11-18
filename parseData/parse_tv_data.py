@@ -1,5 +1,3 @@
-import sys
-sys.path.append('/home/ajeem/Development/projects/python/traktData')
 from trakt.core import BASE_URL, CORE
 from urllib.parse import urljoin
 from sqlmodel import Session, create_engine, select, col
@@ -213,16 +211,3 @@ def all_ratings():
             ratings[rating] = len(session.exec(select(True).where(TV.rating == rating)).fetchall())
     
     return ratings
-
-
-
-if __name__ == '__main__':
-    import sys
-    sys.path.append('/home/ajeem/Development/projects/python/traktData/main.py')
-    # from main import authenticate
-
-    # username = "***REMOVED***"
-    # client_id = "***REMOVED***"
-    # client_secret = "***REMOVED***"
-    # authenticate(username, client_id=client_id, client_secret=client_secret)
-    print(all_ratings())
