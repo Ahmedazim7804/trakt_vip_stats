@@ -93,7 +93,12 @@ def plays_by_time():
                 by_hour[hour] = by_hour.get(hour, 0) + 1
     
     
-    return (by_year, by_month, by_day_of_week, by_hour)
+    return {
+        'by_year': by_year,
+        'by_month': by_month,
+        'by_day_of_week': by_day_of_week,
+        'by_hour': by_hour
+    }
 
 
 def users_top_10_watched_shows():
