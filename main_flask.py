@@ -1,6 +1,8 @@
 from flask import Flask
 from flask import jsonify
 from parseData import parse_tv_data
+from parseData import parse_other_data
+from get_data import get_other_data
 from main import authenticate
 
 
@@ -11,6 +13,22 @@ authenticate(username, client_id=client_id, client_secret=client_secret)
 
 app = Flask(__name__)
 
+
+@app.route('/all_time_stats', methods=['GET'])
+def all_time_stats():
+    return jsonify(get_other_data.all_time_stats())
+
+@app.route('/first_play', methods=['GET'])
+def first_play():
+    return jsonify(parse_other_data.first_play())
+
+@app.route('/pfp', methods=['GET'])
+def profile_picture():
+    return parse_other_data.profile_picture()
+
+@app.route('/username', methods=['GET'])
+def username_route():
+    return username
 
 @app.route('/tv/stats', methods=['GET'])
 def tv_stats():

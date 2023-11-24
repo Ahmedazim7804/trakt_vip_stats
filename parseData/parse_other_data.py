@@ -3,9 +3,19 @@ from Models.movies_model import Movie
 from Models.episode_model import Episode
 from datetime import datetime
 from datetime import timezone
+from urllib.parse import urljoin
+from trakt.core import CORE, BASE_URL
 from sqlalchemy import ARRAY
 
 engine = create_engine("sqlite:///database.db")
+
+def profile_picture():
+    url = urljoin(BASE_URL, 'users/ahmedazim7804?extended=full')
+    data = CORE._handle_request(url=url, method='get')
+
+    pfp = data['images']['avatar']['full']
+
+    return pfp
 
 def first_play():
 
@@ -15,17 +25,30 @@ def first_play():
 
     first_play = datetime.now(tz=timezone.utc)
     movie_title = None
+    tmdb_id = None
 
     with Session(engine) as session:
 
-        for watched_ats, title in session.exec(select(Movie.watched_at, Movie.title)).fetchall():
+        for watched_ats, title, tmdb_id_ in session.exec(select(Movie.watched_at, Movie.title, Movie.tmdb_id)).fetchall():
             for watched_at in watched_ats:
                 watched_at = datetime.fromisoformat(watched_at)
                 if watched_at < first_play:
                     first_play = watched_at
                     movie_title = title
+                    tmdb_id = tmdb_id_
 
-    return movie_title, first_play
+
+    date = first_play.strftime("%d %B %Y")
+    time = first_play.strftime("%H:%M")
+
+    import requests
+    response = requests.get(f'http://webservice.fanart.tv/v3/movies/{tmdb_id}?api_key=eb712f1a7ba8ef0fe678c4399ae2edea').json()
+    try:
+        movie_logo = response['hdmovielogo'][0]['url']
+    except:
+        movie_logo = None
+
+    return {'movie': movie_title, 'date': date, 'time': time, 'movie_logo': movie_logo}
 
 
 def most_recent_play():

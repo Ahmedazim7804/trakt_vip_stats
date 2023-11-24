@@ -7,7 +7,7 @@ def all_time_stats():
         page = 1
         comments = 0
         while True:
-            url = urljoin(BASE_URL, f'users/lish408/comments/all/all?include_replies=False&page={page}')
+            url = urljoin(BASE_URL, f'users/***REMOVED***/comments/all/all?include_replies=False&page={page}')
             data = CORE._handle_request(url=url, method='get')
 
             if not data:
@@ -29,7 +29,14 @@ def all_time_stats():
     lists : int = len(CORE._handle_request(url=urljoin(BASE_URL, 'users/ahmedazim7804/lists'), method='get'))
     comments : int = get_comments()
 
-    return plays, hours, collected, ratings, lists, comments
+    return {
+        'plays': plays,
+        'hours': hours,
+        'collected': collected,
+        'ratings': ratings,
+        'lists': lists,
+        'comments': comments
+        }
 
 if __name__ == '__main__':
     import sys
