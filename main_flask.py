@@ -12,7 +12,7 @@ client_secret = "***REMOVED***"
 authenticate(username, client_id=client_id, client_secret=client_secret)
 
 app = Flask(__name__)
-
+app.json.sort_keys = False
 
 @app.route('/all_time_stats', methods=['GET'])
 def all_time_stats():
@@ -79,4 +79,4 @@ def all_ratings():
     return jsonify(parse_tv_data.all_ratings())
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8455)
+    app.run(host='0.0.0.0', port=8455, debug=True)

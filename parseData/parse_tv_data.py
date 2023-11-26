@@ -6,6 +6,8 @@ from Models.shows_model import TV
 from Models.list_model import Trakt250Shows, Imdb250Shows, RollingStone100Shows
 from datetime import datetime, timezone
 import collections
+import calendar
+
 
 engine = create_engine("sqlite:///database.db")
 
@@ -66,8 +68,8 @@ def tv_stats():
         plays_day_day = 0
     
     return {
-        'hours' : (hours, hours_per_year, hours_per_month, hours_day_day),
-        'plays' : (plays, plays_per_year, plays_per_month, plays_day_day)
+        'hours' : {'total': int(hours), 'per_year': hours_per_year, 'per_month': hours_per_month, 'per_day': hours_day_day},
+        'plays' : {'total': int(plays), 'per_year': plays_per_year, 'per_month': plays_per_month, 'per_day': plays_day_day},
     }
 
 def plays_by_time():
@@ -84,7 +86,7 @@ def plays_by_time():
 
                 year = time.year
                 month = time.strftime("%b")
-                day = time.strftime("%b")
+                day = time.strftime("%a")
                 hour = time.hour
 
                 by_year[year] = by_year.get(year, 0) + 1    
@@ -92,6 +94,26 @@ def plays_by_time():
                 by_day_of_week[day] = by_day_of_week.get(day, 0) + 1
                 by_hour[hour] = by_hour.get(hour, 0) + 1
     
+    # Adding years where no Show has watched
+    max_year = max(by_year.keys())
+    min_year = min(by_year.keys())
+    for year in range(min_year, max_year):
+        if year not in by_year.keys():
+            by_year[year] = 0
+
+    # Sort by_month by month name
+    sorted_months = calendar.month_abbr[1:]
+    by_month = dict(sorted(by_month.items(), key=lambda item: sorted_months.index(item[0])))
+
+    # Sort by_day_of_week by day name
+    sorted_days = calendar.day_abbr[:]
+    by_day_of_week = dict(sorted(by_day_of_week.items(), key=lambda item: sorted_days.index(item[0])))
+
+    # Sort by_year
+    by_year = dict(sorted(by_year.items(), key=lambda item: item[0]))
+
+    # Sort by_hour
+    by_hour = dict(sorted(by_hour.items(), key=lambda item: item[0]))
     
     return {
         'by_year': by_year,
@@ -121,12 +143,12 @@ def users_top_10_watched_shows():
 
             shows[show_id] = watched_time
 
-    shows = dict(collections.Counter(shows).most_common(10)) # Highest watched 10 shows
+        shows = dict(collections.Counter(shows).most_common(10)) # Highest watched 10 shows
 
-    for id, runtime in shows.items():
-        runtime = prettify_minutes(runtime)
-
-        shows[id] = runtime
+        for id, runtime in shows.items():
+            runtime = prettify_minutes(runtime)
+            poster = session.exec(select(TV.poster).where(TV.tmdb_id == id)).first()
+            shows[id] = {'runtime': runtime, 'poster': poster}
 
     return shows
 
