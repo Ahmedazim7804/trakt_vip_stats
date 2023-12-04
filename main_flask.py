@@ -2,6 +2,7 @@ from flask import Flask
 from flask import jsonify
 from parseData import parse_tv_data
 from parseData import parse_other_data
+from parseData import parse_list_data
 from get_data import get_other_data
 from main import authenticate
 
@@ -43,6 +44,10 @@ def plays_by_time():
 @app.route('/tv/users_top_10', methods=['GET'])
 def users_top_10_watched_shows():
     return jsonify(parse_tv_data.users_top_10_watched_shows())
+
+@app.route('/trakt/most_watched_shows', methods=['GET'])
+def trakt_most_watched_shows(): 
+    return jsonify(parse_list_data.trakt_most_watched_shows())
 
 
 @app.route('/tv/by_genre', methods=['GET'])

@@ -160,6 +160,8 @@ def shows_by_genre():
             for genre in genres:
                 shows[genre] = shows.get(genre, 0) + 1
 
+    # Sorting Dictionary
+    shows = dict(sorted(shows.items(), key=lambda item: item[1], reverse=True))
     
     return shows
 
@@ -169,6 +171,10 @@ def shows_by_released_year():
     with Session(engine) as session:
         for released_year in session.exec(select(TV.released_year)).fetchall():
             shows[released_year] = shows.get(released_year, 0) + 1
+    
+    for year in range(min(shows.keys()), max(shows.keys())):
+        if year not in shows.keys():
+            shows[year] = 0
 
     return shows
 
