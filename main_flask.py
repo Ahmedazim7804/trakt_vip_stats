@@ -3,6 +3,7 @@ from flask import jsonify
 from parseData import parse_tv_data
 from parseData import parse_other_data
 from parseData import parse_list_data
+from parseData import parse_cast
 from get_data import get_other_data
 from main import authenticate
 
@@ -76,12 +77,17 @@ def list_progress():
 
 @app.route('/tv/highest_rated', methods=['GET'])
 def highest_rated_shows():
-    return jsonify(parse_tv_data.highest_rated_shows())
+    return parse_tv_data.highest_rated_shows()
 
 
 @app.route('/tv/all_ratings', methods=['GET'])
 def all_ratings():
     return jsonify(parse_tv_data.all_ratings())
+
+
+@app.route('/actors', methods=['GET'])
+def actors():
+    return parse_cast.most_watched_actors()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8455, debug=True)

@@ -1,8 +1,9 @@
 from trakt.core import BASE_URL, CORE
 from urllib.parse import urljoin
 from sqlmodel import Session, create_engine, select, col
+from sqlalchemy import desc
 from Models.episode_model import Episode
-from Models.shows_model import TV
+from Models.shows_model import TV, Network
 from Models.list_model import Trakt250Shows, Imdb250Shows, RollingStone100Shows
 from datetime import datetime, timezone
 import collections
@@ -189,14 +190,18 @@ def shows_by_country():
     return shows
 
 def shows_by_networks():
-    shows = {}
+    networks_list = {}
 
     with Session(engine) as session:
         for newtorks in session.exec(select(TV.networks)).fetchall():
-            for network in newtorks:
-                shows[network] = shows.get(network, 0) + 1
+            for network_id in newtorks:
+                network, image = session.exec(select(Network.name, Network.image).where(Network.id == network_id)).first()
+                if network in networks_list.keys():
+                    networks_list[network]['shows'] = networks_list[network]['shows'] + 1
+                else:
+                    networks_list[network] = {'shows': 1, 'logo': image}
     
-    return shows
+    return networks_list
 
 def list_progress():
     with Session(engine) as session:
@@ -229,10 +234,8 @@ def list_progress():
 def highest_rated_shows():
     
     with Session(engine) as session:
-        rated_shows = session.exec(select(TV.tmdb_id, TV.rating)).fetchall()
-        rated_shows = sorted(rated_shows, key=lambda x: x[1], reverse=True)[:10]
-        rated_shows = dict(rated_shows)
-
+        rated_shows = session.exec(select(TV.tmdb_id, TV.rating, TV.poster).order_by(desc(TV.rating)).limit(10)).fetchall()
+        rated_shows = {item[0] : {'rating': item[1], 'poster': item[2]} for item in rated_shows}
 
     return rated_shows
 
