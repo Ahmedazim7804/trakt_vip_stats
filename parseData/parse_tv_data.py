@@ -131,7 +131,10 @@ def users_top_10_watched_shows():
         hours = (minutes % (24 * 60)) // 60
         remaining_minutes = minutes % 60
 
-        return f"{days}D {hours}H {remaining_minutes}M"
+        if days == 0:
+            return f"{hours}H {remaining_minutes}M"
+        else:
+            return f"{days}D {hours}H {remaining_minutes}M"
 
     shows = {}
 

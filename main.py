@@ -116,6 +116,6 @@ if __name__ == "__main__":
         add_to_db_fxn=get_lists_data.placeholder_add_data,  # Placeholder function
         progressBar=get_lists_data.progress_bar,
     )
-    print(parse_tv_data.tv_stats())
+    
     print(time.time() - aa)
     

@@ -1,10 +1,12 @@
 from trakt.core import BASE_URL, CORE
 from urllib.parse import urljoin
 from sqlmodel import Session, create_engine, select
+from sqlalchemy import desc
 from Models.movies_model import Movie
 from Models.list_model import Trakt250Movies, Imdb250Movies, Reddit250Movies
 from datetime import datetime, timezone
 import collections
+import calendar
 
 engine = create_engine("sqlite:///database.db")
 
@@ -46,7 +48,7 @@ def movie_stats():
     plays = data['movies']['plays']
     
     years, months , days = time_since_first_play()
-    print(hours, plays)
+    
     if hours:
         hours_per_year : float = round(hours / years, 1)
         hours_per_month : float = round(hours / months, 1)
@@ -66,8 +68,8 @@ def movie_stats():
         plays_day_day = 0
     
     return {
-        'hours' : (hours, hours_per_year, hours_per_month, hours_day_day),
-        'plays' : (plays, plays_per_year, plays_per_month, plays_day_day)
+        'hours' : {'total': int(hours), 'per_year': hours_per_year, 'per_month': hours_per_month, 'per_day': hours_day_day},
+        'plays' : {'total': int(plays), 'per_year': plays_per_year, 'per_month': plays_per_month, 'per_day': plays_day_day},
     }
 
 
@@ -85,7 +87,7 @@ def plays_by_time():
 
                 year = time.year
                 month = time.strftime("%b")
-                day = time.strftime("%b")
+                day = time.strftime("%a")
                 hour = time.hour
 
                 by_year[year] = by_year.get(year, 0) + 1 
@@ -93,8 +95,34 @@ def plays_by_time():
                 by_day_of_week[day] = by_day_of_week.get(day, 0) + 1
                 by_hour[hour] = by_hour.get(hour, 0) + 1
     
+    # Adding years where no Movie has been watched
+    max_year = max(by_year.keys())
+    min_year = min(by_year.keys())
+    for year in range(min_year, max_year):
+        if year not in by_year.keys():
+            by_year[year] = 0
+    
+    # Sort by_month by month name
+    sorted_months = calendar.month_abbr[1:]
+    by_month = dict(sorted(by_month.items(), key=lambda item: sorted_months.index(item[0])))
 
-    return (by_year, by_month, by_day_of_week, by_hour)
+    # Sort by_day_of_week by day name
+    sorted_days = calendar.day_abbr[:]
+    print(by_day_of_week)
+    by_day_of_week = dict(sorted(by_day_of_week.items(), key=lambda item: sorted_days.index(item[0])))
+
+    # Sort by_year
+    by_year = dict(sorted(by_year.items(), key=lambda item: item[0]))
+
+    # Sort by_hour
+    by_hour = dict(sorted(by_hour.items(), key=lambda item: item[0]))
+
+    return {
+        'by_year': by_year,
+        'by_month': by_month,
+        'by_day_of_week': by_day_of_week,
+        'by_hour': by_hour
+    }
 
 
 def users_top_10_watched_movies():
@@ -113,15 +141,15 @@ def users_top_10_watched_movies():
 
     with Session(engine) as session:
         
-        for id, runtime in session.exec(select(Movie.trakt_id, Movie.runtime)).fetchall():
-            movies[id] = movies.get(id, 0) + runtime
+        for id, runtime, plays in session.exec(select(Movie.tmdb_id, Movie.runtime, Movie.plays)).fetchall():
+            movies[id] = movies.get(id, 0) + (runtime * plays)
 
     movies = dict(collections.Counter(movies).most_common(10)) # Highest watched 10 movies
 
     for id, runtime in movies.items():
         runtime = prettify_minutes(runtime)
-
-        movies[id] = runtime
+        poster = session.exec(select(Movie.poster).where(Movie.tmdb_id == id)).first()
+        movies[id] = {'runtime': runtime, 'poster': poster}
 
     return movies
 
@@ -133,6 +161,7 @@ def movies_by_genre():
             for genre in genres:
                 movies[genre] = movies.get(genre, 0) + 1
 
+    movies = dict(sorted(movies.items(), key=lambda item: item[1], reverse=True))
     
     return movies
 
@@ -143,6 +172,10 @@ def movies_by_released_year():
     with Session(engine) as session:
         for released_year in session.exec(select(Movie.released_year)).fetchall():
             movies[released_year] = movies.get(released_year, 0) + 1
+
+    for year in range(min(movies.keys()), max(movies.keys())):
+        if year not in movies.keys():
+            movies[year] = 0
 
     return movies
 
@@ -195,9 +228,8 @@ def list_progress():
 def highest_rated_movies():
     
     with Session(engine) as session:
-        rated_movies = session.exec(select(Movie.tmdb_id, Movie.rating)).fetchall()
-        rated_movies = sorted(rated_movies, key=lambda x: x[1], reverse=True)[:10]
-        rated_movies = dict(rated_movies)
+        rated_movies = session.exec(select(Movie.tmdb_id, Movie.rating, Movie.poster).order_by(desc(Movie.rating)).limit(10)).fetchall()
+        rated_movies = {item[0] : {'rating': item[1], 'poster': item[2]} for item in rated_movies}
 
 
     return rated_movies

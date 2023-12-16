@@ -217,7 +217,7 @@ class MovieData:
             item_countries = self.movieDetails["production_countries"]
 
             for item_country in item_countries:
-                country = item_country["iso_3166_1"]
+                country = item_country["name"]
                 countries.append(country)
 
         except (KeyError, AttributeError):
