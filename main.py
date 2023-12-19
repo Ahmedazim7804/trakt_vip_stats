@@ -72,9 +72,9 @@ if __name__ == "__main__":
 
     load_dotenv()
 
-    username = os.environ['username']
-    client_id = os.environ['trakt_client_id']
-    client_secret = os.environ['trakt_client_secret']
+    username = environ['username']
+    client_id = environ['trakt_client_id']
+    client_secret = environ['trakt_client_secret']
     authenticate(username, client_id=client_id, client_secret=client_secret)
 
     engine = create_engine("sqlite:///database.db")

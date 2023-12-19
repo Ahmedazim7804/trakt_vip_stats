@@ -18,7 +18,7 @@ class Core():
         self.load_config()
     
     def load_config(self):
-        load_dotenv()
+        load_dotenv(dotenv_path='.env', override=True)
 
         self.oauth_token = environ['trakt_oauth_token']
         self.oauth_refresh = environ['trakt_oauth_refresh']
@@ -63,13 +63,14 @@ class Core():
                     value_to_set=value)
     
     def token_expired(self):
+
         current = datetime.now(tz=timezone.utc)
         expires_at = datetime.fromtimestamp(int(self.oauth_expires_at), tz=timezone.utc)
 
         if expires_at - current > timedelta(days=2):
-            return True
-        else:
             return False
+        else:
+            return True
 
     def refresh_token(self):
         url = "https://api-v2launch.trakt.tv/oauth/token"
@@ -101,7 +102,7 @@ class Core():
         
 
     def is_user_authenticated(self):
-    
+        
         if (not self.oauth_token or not self.oauth_expires_at):
             return False
         
@@ -111,9 +112,11 @@ class Core():
         return True
     
     def _handle_request(self, method, url):
-        print(url)
+        
         self.headers['trakt-api-key'] = self.client_id
-        self.headers['Authorization'] = 'Bearer {0}'.format(self.oauth_refresh)
+        self.headers['Authorization'] = 'Bearer {0}'.format(self.oauth_token)
+
+        print(self.headers)
 
         response = self.session.request(method, url, headers=self.headers, params=None)
 
@@ -126,7 +129,7 @@ class Core():
         return json_data
         
 
-load_dotenv()
+load_dotenv(override=True)
 
 BASE_URL = 'https://api-v2launch.trakt.tv/'
 
@@ -137,4 +140,3 @@ CORE = Core(
 )
 
 CORE.authenticate()
-CORE._handle_request('get', 'https://api-v2launch.trakt.tv/users/Ahmedazim7804/history/movies')
