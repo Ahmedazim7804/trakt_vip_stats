@@ -5,3 +5,4 @@ traktstats/
 __pycache__/
 tempCodeRunnerFile.py
 .env
+database.db
