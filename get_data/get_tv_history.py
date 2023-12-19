@@ -6,6 +6,7 @@ from loguru import logger
 from mpire import WorkerPool
 from mpire.utils import make_single_arguments
 from tqdm import tqdm
+import os
 
 engine = create_engine("sqlite:///database.db")
 
@@ -61,7 +62,7 @@ def process_get_history(pipe, pbar):
     # TODO: with pebble but limit=50 or higher
 
     with WorkerPool(n_jobs=10, shared_objects=(pipe, pbar)) as pool:
-        url = urljoin(BASE_URL, f"users/ahmedazim7804/watched/shows")
+        url = urljoin(BASE_URL, f"users/{os.environ['username']}/watched/shows")
         data = CORE._handle_request(method="get", url=url)
 
         data = make_single_arguments(data, generator=False)
@@ -82,7 +83,7 @@ def process_add_data(conn):
 
 
 def progress_bar(conn):
-    url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
+    url = urljoin(BASE_URL, f"users/{os.environ['username']}/stats")
     data = CORE._handle_request(method="get", url=url)
     total_shows = data["shows"]["watched"]
     shows_pbar = tqdm(total=total_shows)

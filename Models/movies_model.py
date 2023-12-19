@@ -7,12 +7,12 @@ import tmdbv3api
 from operator import itemgetter
 from loguru import logger
 from sqlmodel import create_engine, Session, select
+import os
 
 engine = create_engine("sqlite:///database.db")
 
 tmdb = TMDb()
-tmdb.api_key = "***REMOVED***"
-trakt_CLIENT_ID = "***REMOVED***"
+tmdb.api_key = os.environ["tmdb_api_key"]
 TMDbMovie = tmdbv3api.Movie()
 
 

@@ -37,15 +37,3 @@ def oldest_play():
         title = session.exec(select(Movie.title).order_by(Movie.released_year)).first()
 
     return title
-
-
-if __name__ == '__main__':
-    # import sys
-    # sys.path.append('/home/ajeem/Development/projects/python/traktData')
-    from main import authenticate
-
-    username = "***REMOVED***"
-    client_id = "***REMOVED***"
-    client_secret = "***REMOVED***"
-    authenticate(username, client_id=client_id, client_secret=client_secret)
-    print(oldest_play())

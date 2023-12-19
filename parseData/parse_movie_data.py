@@ -7,6 +7,7 @@ from Models.list_model import Trakt250Movies, Imdb250Movies, Reddit250Movies
 from datetime import datetime, timezone
 import collections
 import calendar
+import os
 
 engine = create_engine("sqlite:///database.db")
 
@@ -41,7 +42,7 @@ def time_since_first_play():
 
 def movie_stats():
 
-    url = urljoin(BASE_URL, 'users/ahmedazim7804/stats')
+    url = urljoin(BASE_URL, f'users/{os.environ["username"]}/stats')
     data = CORE._handle_request(url=url, method='get')
 
     hours = round((data['movies']['minutes'] / 60), 0)

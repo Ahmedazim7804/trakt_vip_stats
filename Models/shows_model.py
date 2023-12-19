@@ -5,10 +5,10 @@ import tmdbv3api
 from operator import itemgetter
 from loguru import logger
 from sqlmodel import create_engine, Session, select
+import os
 
 tmdb = TMDb()
-tmdb.api_key = "***REMOVED***"
-trakt_CLIENT_ID = "***REMOVED***"
+tmdb.api_key = os.environ["tmdb_api_key"]
 TMDbTV = tmdbv3api.TV()
 
 engine = create_engine("sqlite:///database.db")

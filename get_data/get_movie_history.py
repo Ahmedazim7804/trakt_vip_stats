@@ -7,6 +7,7 @@ from mpire import WorkerPool
 from mpire.utils import make_single_arguments
 import time
 from tqdm import tqdm
+import os
 
 
 engine = create_engine("sqlite:///database.db")
@@ -94,7 +95,7 @@ def process_get_history(pipe, pbar):
         page = 1
         while True:
             url = urljoin(
-                BASE_URL, f"users/ahmedazim7804/history/movies?limit=50&page={page}"
+                BASE_URL, f"users/{os.environ['username']}/history/movies?limit=50&page={page}"
             )
             data = CORE._handle_request(method="get", url=url)
 
@@ -125,7 +126,7 @@ def process_add_data(conn):
 
 
 def progress_bar(conn):
-    url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
+    url = urljoin(BASE_URL, f"users/{os.environ['username']}/stats")
     data = CORE._handle_request(method="get", url=url)
     total_movies = data["movies"]["plays"]
     movies_pbar = tqdm(total=total_movies)

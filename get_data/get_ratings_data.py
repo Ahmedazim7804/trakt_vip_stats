@@ -7,6 +7,7 @@ from Models.episode_model import Episode
 from mpire import WorkerPool
 from mpire.utils import make_single_arguments
 from tqdm import tqdm
+import os
 
 engine = create_engine("sqlite:///database.db")
 
@@ -42,7 +43,7 @@ def process_get_ratings(pipe, pbar):
     page = 0
     with WorkerPool(n_jobs=10, shared_objects=(pipe, pbar)) as pool:
         while True:
-            url = urljoin(BASE_URL, f"users/ahmedazim7804/ratings?limit=50&page={page}")
+            url = urljoin(BASE_URL, f"users/{os.environ['username']}/ratings?limit=50&page={page}")
             data = CORE._handle_request(method="get", url=url)
 
             if not data:
@@ -67,7 +68,7 @@ def process_add_data(conn):
 
 
 def progress_bar(conn):
-    url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
+    url = urljoin(BASE_URL, f"users/{os.environ['username']}/stats")
     data = CORE._handle_request(method="get", url=url)
 
     total_ratings = data["ratings"]["total"]

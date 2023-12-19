@@ -1,5 +1,6 @@
 from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
+import os
 from Models.movies_model import Cast, Crew
 from Models.episode_model import Episode, EpisodeData
 from sqlmodel import create_engine, Session, select
@@ -84,7 +85,7 @@ def process_get_history(pipe, pbar):
         page = 1
         while True:
             url = urljoin(
-                BASE_URL, f"users/ahmedazim7804/history/episodes?limit=50&page={page}"
+                BASE_URL, f"users/{os.environ['username']}/history/episodes?limit=50&page={page}"
             )
             data = CORE._handle_request(method="get", url=url)
 
@@ -115,7 +116,7 @@ def process_add_data(conn):
 
 
 def progress_bar(conn):
-    url = urljoin(BASE_URL, f"users/ahmedazim7804/stats")
+    url = urljoin(BASE_URL, f"users/{os.environ['username']}/stats")
     data = CORE._handle_request(method="get", url=url)
     total_episodes = data["episodes"]["plays"]
     movies_pbar = tqdm(total=total_episodes)

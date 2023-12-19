@@ -9,10 +9,12 @@ from parseData import parse_crew
 from get_data import get_other_data
 from main import authenticate
 
+load_dotenv()
 
-username = "***REMOVED***"
-client_id = "***REMOVED***"
-client_secret = "***REMOVED***"
+username = os.environ['username']
+client_id = os.environ['trakt_client_id']
+client_secret = os.environ['trakt_client_secret']
+
 authenticate(username, client_id=client_id, client_secret=client_secret)
 
 app = Flask(__name__)

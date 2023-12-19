@@ -6,11 +6,12 @@ from datetime import timezone
 from urllib.parse import urljoin
 from trakt.core import CORE, BASE_URL
 from sqlalchemy import ARRAY
+import os
 
 engine = create_engine("sqlite:///database.db")
 
 def profile_picture():
-    url = urljoin(BASE_URL, 'users/ahmedazim7804?extended=full')
+    url = urljoin(BASE_URL, f'users/{os.environ["username"]}?extended=full')
     data = CORE._handle_request(url=url, method='get')
 
     pfp = data['images']['avatar']['full']

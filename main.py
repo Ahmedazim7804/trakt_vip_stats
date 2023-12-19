@@ -13,6 +13,7 @@ from sqlmodel import SQLModel, create_engine
 from loguru import logger
 from parseData import parse_other_data
 from parseData import parse_tv_data
+from dotenv import load_dotenv
 
 def check_config():
     if "XDG_DATA_HOME" in environ:
@@ -69,9 +70,11 @@ if __name__ == "__main__":
     import time
     aa = time.time()
 
-    username = "***REMOVED***"
-    client_id = "***REMOVED***"
-    client_secret = "***REMOVED***"
+    load_dotenv()
+
+    username = os.environ['username']
+    client_id = os.environ['trakt_client_id']
+    client_secret = os.environ['trakt_client_secret']
     authenticate(username, client_id=client_id, client_secret=client_secret)
 
     engine = create_engine("sqlite:///database.db")
