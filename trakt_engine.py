@@ -6,6 +6,11 @@ import json
 import requests
 from datetime import datetime, timedelta, timezone
 
+# Core class is used to authenticate to trakt and get data from trakt api
+# More or less copied from pytrakt [1].
+# [1]: https://github.com/moogar0880/PyTrakt/tree/master 
+
+
 class Core():
     def __init__(self, client_id, client_secret, username):
         self.username = username
@@ -116,8 +121,6 @@ class Core():
         self.headers['trakt-api-key'] = self.client_id
         self.headers['Authorization'] = 'Bearer {0}'.format(self.oauth_token)
 
-        print(self.headers)
-
         response = self.session.request(method, url, headers=self.headers, params=None)
 
         if response.status_code == 200:
@@ -138,5 +141,3 @@ CORE = Core(
     client_secret=environ['trakt_client_secret'],
     username=environ['username']
 )
-
-CORE.authenticate()

@@ -1,8 +1,7 @@
 import trakt
 from os import environ, path, makedirs
 import platform
-import trakt.core
-from trakt.core import CORE
+from trakt_engine import CORE
 import get_data.get_movie_history as get_movie_history
 import get_data.get_tv_history as get_tv_history
 import get_data.get_episode_history as get_episode_history
@@ -14,36 +13,6 @@ from loguru import logger
 from parseData import parse_other_data
 from parseData import parse_tv_data
 from dotenv import load_dotenv
-
-def check_config():
-    if "XDG_DATA_HOME" in environ:
-        data_dir = environ["XDG_DATA_HOME"]
-    elif platform.system() == "Windows":
-        data_dir = path.expanduser("~/.traktexport")
-    else:
-        data_dir = path.expanduser("~/.local/share")
-    makedirs(data_dir, exist_ok=True)
-
-    default_cfg_path = path.join(data_dir, "traktexport.json")
-    traktexport_cfg = environ.get("TRAKTEXPORT_CFG", default_cfg_path)
-    trakt.core.CONFIG_PATH = traktexport_cfg
-
-    if not path.exists(default_cfg_path):
-        return False
-
-    return True
-
-
-def authenticate(username: str, client_id: str, client_secret: str):
-    trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH
-
-    if check_config():
-        CORE._bootstrap()
-    else:
-        trakt.init(
-            username, client_id=client_id, client_secret=client_secret, store=True
-        )
-
 
 def Multiprocess(fxn, add_to_db_fxn, progressBar):
     pipe, conn = Pipe()
@@ -62,20 +31,14 @@ def Multiprocess(fxn, add_to_db_fxn, progressBar):
     process3.join()
 
 
-
-
-
 if __name__ == "__main__":
 
     import time
-    aa = time.time()
+    start_time = time.time()
 
     load_dotenv()
 
-    username = environ['username']
-    client_id = environ['trakt_client_id']
-    client_secret = environ['trakt_client_secret']
-    authenticate(username, client_id=client_id, client_secret=client_secret)
+    CORE.authenticate()
 
     engine = create_engine("sqlite:///database.db")
     SQLModel.metadata.create_all(engine)
@@ -120,5 +83,6 @@ if __name__ == "__main__":
         progressBar=get_lists_data.progress_bar,
     )
     
-    print(time.time() - aa)
+    time_taken = time.time() - start_time
+    print(time_taken)
     

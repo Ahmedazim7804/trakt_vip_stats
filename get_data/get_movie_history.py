@@ -1,5 +1,5 @@
 from urllib.parse import urljoin
-from trakt.core import CORE, BASE_URL
+from trakt_engine import CORE, BASE_URL
 from Models.movies_model import Movie, MovieData, Cast, Studio, Crew
 from sqlmodel import create_engine, Session, select
 from loguru import logger

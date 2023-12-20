@@ -1,5 +1,5 @@
 from urllib.parse import urljoin
-from trakt.core import CORE, BASE_URL
+from trakt_engine import CORE, BASE_URL
 from tqdm import tqdm
 from Models.list_model import (
     Trakt250Movies,

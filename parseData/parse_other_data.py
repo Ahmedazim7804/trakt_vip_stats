@@ -4,7 +4,7 @@ from Models.episode_model import Episode
 from datetime import datetime
 from datetime import timezone
 from urllib.parse import urljoin
-from trakt.core import CORE, BASE_URL
+from trakt_engine import CORE, BASE_URL
 from sqlalchemy import ARRAY
 import os
 
