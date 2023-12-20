@@ -1,5 +1,7 @@
 from flask import Flask
 from flask import jsonify
+from dotenv import load_dotenv
+import os
 from parseData import parse_tv_data
 from parseData import parse_movie_data
 from parseData import parse_other_data
@@ -7,15 +9,12 @@ from parseData import parse_list_data
 from parseData import parse_cast
 from parseData import parse_crew
 from get_data import get_other_data
-from main import authenticate
 
 load_dotenv()
 
 username = os.environ['username']
 client_id = os.environ['trakt_client_id']
 client_secret = os.environ['trakt_client_secret']
-
-authenticate(username, client_id=client_id, client_secret=client_secret)
 
 app = Flask(__name__)
 app.json.sort_keys = False
@@ -136,5 +135,8 @@ def highest_rated_movies():
 def movies_all_ratings():
     return jsonify(parse_movie_data.all_ratings())
 
+def start_server(port=8455, debug=False):
+    app.run(host='0.0.0.0', port=port, debug=debug)
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8455, debug=True)
+    start_server()

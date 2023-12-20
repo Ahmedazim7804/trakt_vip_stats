@@ -2,6 +2,7 @@ from os import environ, path, makedirs
 import platform
 import sys
 from trakt_engine import CORE
+from server import start_server
 import get_data.get_movie_history as get_movie_history
 import get_data.get_tv_history as get_tv_history
 import get_data.get_episode_history as get_episode_history
@@ -129,6 +130,12 @@ def update(args):
         save()
         logger.info("Data saved to json file")
 
+def flask_server_start(args):
+    port = args.port
+    debug = args.debug
+    
+    start_server(port=port, debug=debug)
+
 
 if __name__ == "__main__":
         
@@ -155,6 +162,10 @@ if __name__ == "__main__":
     save_subparser.set_defaults(func=lambda x: save())
 
     server_subparser = subparsers.add_parser('server', help='start api to serve all-time-stats data') 
+    server_subparser.add_argument('--port', action='store', type=int, default=8455)
+    server_subparser.add_argument('--debug', action='store_true')
+    server_subparser.set_defaults(func=flask_server_start)
+
 
     args = parser.parse_args()
     if hasattr(args, 'func'):
