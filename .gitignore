@@ -4,4 +4,6 @@ traktstats/
 .ruff_cache/
 __pycache__/
 tempCodeRunnerFile.py
+.env
 database.db
+trakt-all-time-stats.json

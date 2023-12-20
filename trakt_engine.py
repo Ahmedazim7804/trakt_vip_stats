@@ -128,7 +128,8 @@ class Core():
                 json_data = json.loads(response.content.decode('UTF-8', 'ignore'))
             except JSONDecodeError as e:
                 raise BadResponseException(response, f"Unable to parse JSON: {e}")
-        
+                json_data = {}
+
         return json_data
         
 

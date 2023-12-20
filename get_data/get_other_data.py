@@ -1,4 +1,4 @@
-from trakt.core import BASE_URL, CORE
+from trakt_engine import BASE_URL, CORE
 from urllib.parse import urljoin
 import os
 

@@ -1,4 +1,4 @@
-from trakt.core import BASE_URL, CORE
+from trakt_engine import BASE_URL, CORE
 from urllib.parse import urljoin
 from sqlmodel import Session, create_engine, select
 from sqlalchemy import desc
@@ -109,7 +109,7 @@ def plays_by_time():
 
     # Sort by_day_of_week by day name
     sorted_days = calendar.day_abbr[:]
-    print(by_day_of_week)
+    
     by_day_of_week = dict(sorted(by_day_of_week.items(), key=lambda item: sorted_days.index(item[0])))
 
     # Sort by_year

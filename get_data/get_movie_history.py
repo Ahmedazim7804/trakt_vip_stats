@@ -106,7 +106,7 @@ def process_get_history(pipe, pbar):
             data = make_single_arguments(data, generator=False)
 
             if not data:
-                logger.error(f"COMPLETED")
+                logger.info(f"COMPLETED")
                 pipe.send(["stop"])
                 pbar.send(False)
                 break
