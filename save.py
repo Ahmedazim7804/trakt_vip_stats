@@ -1,4 +1,3 @@
-from flask import jsonify
 import json
 from dotenv import load_dotenv
 import os
@@ -14,8 +13,8 @@ def save():
     load_dotenv()
 
     username = os.environ['username']
-    client_id = os.environ['trakt_client_id']
-    client_secret = os.environ['trakt_client_secret']
+    os.environ['trakt_client_id']
+    os.environ['trakt_client_secret']
 
     json_data = {}
 

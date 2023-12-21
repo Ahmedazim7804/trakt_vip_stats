@@ -1,13 +1,7 @@
 from sqlmodel import Session, create_engine, select
 from Models.movies_model import Movie
-from Models.episode_model import Episode
 from Models.shows_model import TV
 from Models.list_model import MostPlayedShows, MostPlayedMovies
-from datetime import datetime
-from datetime import timezone
-from urllib.parse import urljoin
-from trakt_engine import CORE, BASE_URL
-from sqlalchemy import ARRAY
 
 engine = create_engine("sqlite:///database.db")
 

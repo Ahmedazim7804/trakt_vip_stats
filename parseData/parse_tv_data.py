@@ -1,6 +1,6 @@
 from trakt_engine import BASE_URL, CORE
 from urllib.parse import urljoin
-from sqlmodel import Session, create_engine, select, col
+from sqlmodel import Session, create_engine, select
 from sqlalchemy import desc
 from Models.episode_model import Episode
 from Models.shows_model import TV, Network

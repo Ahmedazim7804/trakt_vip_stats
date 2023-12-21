@@ -5,7 +5,6 @@ from datetime import datetime
 from datetime import timezone
 from urllib.parse import urljoin
 from trakt_engine import CORE, BASE_URL
-from sqlalchemy import ARRAY
 import os
 
 engine = create_engine("sqlite:///database.db")

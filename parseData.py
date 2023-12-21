@@ -1,5 +1,3 @@
-from trakt_engine import BASE_URL, CORE
-from urllib.parse import urljoin
 from sqlmodel import Session, create_engine, select
 from Models.movies_model import Movie
 from datetime import datetime, timezone

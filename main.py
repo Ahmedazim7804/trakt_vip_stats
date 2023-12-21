@@ -1,5 +1,3 @@
-from os import environ, path, makedirs
-import platform
 import sys
 from trakt_engine import CORE
 from server import start_server
@@ -11,8 +9,6 @@ import get_data.get_lists_data as get_lists_data
 from multiprocessing import Process, Pipe
 from sqlmodel import SQLModel, create_engine
 from loguru import logger
-from parseData import parse_other_data
-from parseData import parse_tv_data
 from save import save
 from dotenv import load_dotenv
 import argparse

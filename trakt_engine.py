@@ -1,7 +1,6 @@
-from urllib.parse import urljoin
 from requests_oauthlib import OAuth2Session
 from dotenv import load_dotenv, set_key
-from os import path, environ
+from os import environ
 import json
 import requests
 from datetime import datetime, timedelta, timezone
