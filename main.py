@@ -91,6 +91,8 @@ def run(args):
 def update(args):
     set_log_level(args.log_level)
 
+    CORE.authenticate()
+
     if args.data == 'movies':
         Multiprocess(
             fxn=get_movie_history.process_get_history,

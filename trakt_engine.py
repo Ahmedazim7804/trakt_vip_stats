@@ -1,5 +1,5 @@
 from requests_oauthlib import OAuth2Session
-from dotenv import load_dotenv, set_key
+from dotenv import load_dotenv, set_key, dotenv_values
 from os import environ
 import json
 import requests
@@ -20,14 +20,33 @@ class Core():
         self.session = requests.Session()
 
         self.load_config()
+
+    def fix_config(self):
+        config = dotenv_values(dotenv_path='.env')
+        
+        if ('trakt_oauth_token' not in config.keys() or
+            'trakt_oauth_refresh' not in config.keys() or
+            'trakt_oauth_expires_at' not in config.keys()):
+            self.store(
+            {
+                'trakt_oauth_token': '',
+                'trakt_oauth_refresh': '',
+                'trakt_oauth_expires_at': ''
+            }
+        )
     
     def load_config(self):
         load_dotenv(dotenv_path='.env', override=True)
 
-        self.oauth_token = environ['trakt_oauth_token']
-        self.oauth_refresh = environ['trakt_oauth_refresh']
-        self.oauth_expires_at = environ['trakt_oauth_expires_at']
-        self.redirect_uri = 'urn:ietf:wg:oauth:2.0:oob'
+        try:
+            self.oauth_token = environ['trakt_oauth_token']
+            self.oauth_refresh = environ['trakt_oauth_refresh']
+            self.oauth_expires_at = environ['trakt_oauth_expires_at']
+            self.redirect_uri = 'urn:ietf:wg:oauth:2.0:oob'
+        except KeyError:
+            self.fix_config()
+            self.load_config()
+            
 
     def authenticate(self):
 
@@ -59,6 +78,8 @@ class Core():
                 'trakt_oauth_expires_at': str(oauth_expires_at)
             }
         )
+
+        self.load_config()
     
     def store(self, data):
         for key, value in data.items():
