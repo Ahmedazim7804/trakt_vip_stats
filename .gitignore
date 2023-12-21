@@ -6,4 +6,4 @@ __pycache__/
 tempCodeRunnerFile.py
 .env
 database.db
-trakt-all-time-stats.json
+all-time-stats.json
