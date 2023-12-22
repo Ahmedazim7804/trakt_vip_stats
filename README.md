@@ -113,4 +113,4 @@ Available Endpoints are
 
 
 # Note
-This program only generates [all-time-stats](https://blog.trakt.tv/all-time-year-in-review-f6f931e4461d) equivalent data. To see this data in graphical interface use this app.
+This program only generates [all-time-stats](https://blog.trakt.tv/all-time-year-in-review-f6f931e4461d) equivalent data. To see this data in graphical interface use this [app](https://github.com/Ahmedazim7804/traktstats_app).
