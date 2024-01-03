@@ -89,6 +89,7 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode=True):
 class MovieData:
     def __init__(self, tmdb_id):
         self.tmdb_id = tmdb_id
+        self.has_data = True
 
         try:
             self.movieDetails = TMDbMovie.details(self.tmdb_id)
@@ -97,6 +98,7 @@ class MovieData:
             logger.error(
                 f"TMDb Movie Id : '{self.tmdb_id}', failed to get INFO because {e}"
             )
+            self.has_data = False
 
     def genres(self):
         genres = []

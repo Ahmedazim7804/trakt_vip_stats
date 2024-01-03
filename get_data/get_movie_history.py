@@ -37,6 +37,11 @@ def get_movie(pipes, item):
 
         movieData = MovieData(tmdb_id=tmdb_id)
 
+        if not movieData.has_data:
+            logger.warning(f"Skipped Movie trakt_id={trakt_id} because no data was found on tmdb")
+            pbar_pipe.send(True)
+            return
+        
         countries = movieData.countries()
         poster = movieData.poster()
         runtime = movieData.runtime()

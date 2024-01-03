@@ -67,6 +67,7 @@ class EpisodeData:
         self.tmdb_show_id = tmdb_show_id
         self.season = season
         self.episode = episode
+        self.has_data = True
 
         try:
             self.episodeDetails = TMDbEpisode.details(tmdb_show_id, season, episode)
@@ -77,6 +78,7 @@ class EpisodeData:
             )
             self.episodeDetails = {}
             self.episodeCredits = {}
+            self.has_data = False
 
     def format(self):
         return f"S{str(self.season).zfill(2)}E{str(self.episode).zfill(2)}"

@@ -65,6 +65,7 @@ class TV(SQLModel, table=True, arbitrary_types_allowed=True):
 class TvData:
     def __init__(self, tmdb_id):
         self.tmdb_id = tmdb_id
+        self.has_data = True
 
         try:
             self.tvDetails = TMDbTV.details(tmdb_id)
@@ -73,6 +74,7 @@ class TvData:
                 f"TMDb Movie Id : '{self.tmdb_id}', failed to get INFO because {e}"
             )
             self.tvDetails = {}
+            self.has_data = False
 
     def genres(self):
         genres = []

@@ -39,6 +39,11 @@ def get_episode(pipes, item):
             tmdb_show_id=tmdb_show_id, season=season, episode=episode
         )
 
+        if not episodeData.has_data:
+            logger.warning(f"Skipped Episode trakt_id={trakt_id} beacuse no data was found on tmdb")
+            pbar_pipe.send(True)
+            return
+
         runtime = episodeData.runtime() #FIXME: Some episode do not have runtime in tmdb, use standard or avg. runtime of their show for them
 
         cast = episodeData.cast()

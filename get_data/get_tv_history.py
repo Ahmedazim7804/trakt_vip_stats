@@ -30,6 +30,11 @@ def get_tv(pipes, item):
 
         tvData = TvData(tmdb_id=tmdb_id)
 
+        if not tvData.has_data:
+            logger.warning(f"Skipped SHOW trakt_id={trakt_id} because no data was found on tmdb")
+            pbar_pipe.send(True)
+            return
+
         networks = tvData.network()
         networs_ids = [network.id for network in networks]
 
