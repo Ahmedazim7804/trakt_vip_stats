@@ -172,6 +172,8 @@ def movies_by_released_year():
 
     with Session(engine) as session:
         for released_year in session.exec(select(Movie.released_year)).fetchall():
+            if type(released_year) != int:
+                continue
             movies[released_year] = movies.get(released_year, 0) + 1
 
     for year in range(min(movies.keys()), max(movies.keys())):

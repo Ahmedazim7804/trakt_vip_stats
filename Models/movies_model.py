@@ -41,12 +41,12 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode=True):
     id: int
     title: str
     trakt_id: str = Field(primary_key=True)
-    imdb_id: str = None
-    tmdb_id: str = None
+    imdb_id: str = Field(nullable=True, default='')
+    tmdb_id: str = Field(nullable=True, default='')
     watched_at: List[str] = Field(sa_column=Column(JSON))
     watched_ids: List[str] = Field(sa_column=Column(JSON))
     plays: int
-    released_year: int
+    released_year: int = Field(nullable=True)
     cast: List[int] = Field(sa_column=Column(JSON))
     studios: List[int] = Field(sa_column=Column(JSON))
     genres: List[str] = Field(sa_column=Column(JSON))
@@ -57,19 +57,22 @@ class Movie(SQLModel, table=True, arbitrary_types_allowed=True, orm_mode=True):
     rating: Optional[int] = Field(default=0)
 
     def add_to_db(self):
-        with Session(engine) as session:
-            existed = session.exec(
-                select(Movie).where(Movie.tmdb_id == self.tmdb_id)
-            ).first()
-            if not existed:
-                session.add(self)
-                session.commit()
-            else:
-                existed.watched_ids = [*existed.watched_ids, *self.watched_ids]
-                existed.watched_at = [*existed.watched_at, *self.watched_at]
-                existed.plays = existed.plays + 1
+        try:
+            with Session(engine) as session:
+                existed = session.exec(
+                    select(Movie).where(Movie.tmdb_id == self.tmdb_id)
+                ).first()
+                if not existed:
+                    session.add(self)
+                    session.commit()
+                else:
+                    existed.watched_ids = [*existed.watched_ids, *self.watched_ids]
+                    existed.watched_at = [*existed.watched_at, *self.watched_at]
+                    existed.plays = existed.plays + 1
 
-            session.commit()
+                session.commit()
+        except Exception as e:
+            logger.error(f"Failed to add Movie Trakt Id: {self.trakt_id} to database due to error {e}")
 
     def update(self, watched_id, watched_at):
         with Session(engine) as session:

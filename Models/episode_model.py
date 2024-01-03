@@ -33,19 +33,22 @@ class Episode(SQLModel, table=True, arbitrary_types_allowed=True):
     crew: List[int] = Field(sa_column=Column(JSON))
 
     def add_to_db(self):
-        with Session(engine) as session:
-            existed = session.exec(
-                select(Episode).where(Episode.trakt_id == self.trakt_id)
-            ).first()
-            if not existed:
-                session.add(self)
-                session.commit()
-            else:
-                existed.watched_at = [*existed.watched_at, *self.watched_at]
-                existed.watched_ids = [*existed.watched_ids, *self.watched_ids]
-                existed.plays = existed.plays + 1
+        try:
+            with Session(engine) as session:
+                existed = session.exec(
+                    select(Episode).where(Episode.trakt_id == self.trakt_id)
+                ).first()
+                if not existed:
+                    session.add(self)
+                    session.commit()
+                else:
+                    existed.watched_at = [*existed.watched_at, *self.watched_at]
+                    existed.watched_ids = [*existed.watched_ids, *self.watched_ids]
+                    existed.plays = existed.plays + 1
 
-            session.commit()
+                session.commit()
+        except Exception as e:
+            logger.error(f"Failed to add Episode Trakt Id: {self.trakt_id} to database due to Error {e}")
 
     def update(self, watched_id, watched_at):
         with Session(engine) as session:

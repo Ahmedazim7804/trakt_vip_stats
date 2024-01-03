@@ -47,13 +47,16 @@ class TV(SQLModel, table=True, arbitrary_types_allowed=True):
     countries: List[str] = Field(sa_column=Column(JSON))
 
     def add_to_db(self):
-        with Session(engine) as session:
-            existed = session.exec(
-                select(TV).where(TV.trakt_id == self.trakt_id)
-            ).first()
-            if not existed:
-                session.add(self)
-                session.commit()
+        try:
+            with Session(engine) as session:
+                existed = session.exec(
+                    select(TV).where(TV.trakt_id == self.trakt_id)
+                ).first()
+                if not existed:
+                    session.add(self)
+                    session.commit()
+        except Exception as e:
+            logger.error(f"Failed to add Tv Show Trakt Id: {self.trakt_id} to database due to error {e}")
 
     def set_rating(self, rating):
         with Session(engine) as session:
