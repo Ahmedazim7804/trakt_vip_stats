@@ -35,6 +35,7 @@ def first_play():
                     watched_at = datetime.fromisoformat(watched_at)
                 except Exception as e:
                     print(f"{e} for {tmdb_id}")
+                    continue
                 if watched_at < first_play:
                     first_play = watched_at
                     movie_title = title
