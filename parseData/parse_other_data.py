@@ -31,7 +31,10 @@ def first_play():
 
         for watched_ats, title, tmdb_id_ in session.exec(select(Movie.watched_at, Movie.title, Movie.tmdb_id)).fetchall():
             for watched_at in watched_ats:
-                watched_at = datetime.fromisoformat(watched_at)
+                try:
+                    watched_at = datetime.fromisoformat(watched_at)
+                except Exception as e:
+                    print(f"{e} for {tmdb_id}")
                 if watched_at < first_play:
                     first_play = watched_at
                     movie_title = title

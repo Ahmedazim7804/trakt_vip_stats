@@ -16,7 +16,7 @@ class Core():
         self.client_id = client_id
         self.client_secret = client_secret
         self.headers = {'Content-Type': 'application/json', 'trakt-api-version': '2'}
-        self.base_url = "https://api-v2launch.trakt.tv/"
+        self.base_url = "https://api.trakt.tv/"
         self.session = requests.Session()
 
         self.load_config()
@@ -53,8 +53,8 @@ class Core():
         if self.is_user_authenticated():
             return
         
-        authorization_base_url = "https://api-v2launch.trakt.tv/oauth/authorize"
-        token_url = "https://api-v2launch.trakt.tv/oauth/token"
+        authorization_base_url = "https://api.trakt.tv/oauth/authorize"
+        token_url = "https://api.trakt.tv/oauth/token"
 
         oauth = OAuth2Session(client_id=self.client_id,
                             redirect_uri='urn:ietf:wg:oauth:2.0:oob',
@@ -98,7 +98,7 @@ class Core():
             return True
 
     def refresh_token(self):
-        url = "https://api-v2launch.trakt.tv/oauth/token"
+        url = "https://api.trakt.tv/oauth/token"
 
         post_data = {
                 'client_id': self.client_id,
@@ -155,7 +155,7 @@ class Core():
 
 load_dotenv(override=True)
 
-BASE_URL = 'https://api-v2launch.trakt.tv/'
+BASE_URL = 'https://api.trakt.tv/'
 
 CORE = Core(
     client_id=environ['trakt_client_id'],
