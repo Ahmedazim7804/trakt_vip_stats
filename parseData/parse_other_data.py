@@ -32,10 +32,14 @@ def first_play():
         for watched_ats, title, tmdb_id_ in session.exec(select(Movie.watched_at, Movie.title, Movie.tmdb_id)).fetchall():
             for watched_at in watched_ats:
                 try:
-                    watched_at = datetime.fromisoformat(watched_at)
+                    watched_at = datetime.strptime(watched_at, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
                 except Exception as e:
                     print(f"{e} for {tmdb_id}")
-                    continue
+                # try:
+                #     watched_at = datetime.fromisoformat(watched_at)
+                # except Exception as e:
+                #     print(f"{e} for {tmdb_id}")
+                #     continue
                 if watched_at < first_play:
                     first_play = watched_at
                     movie_title = title
@@ -68,7 +72,8 @@ def most_recent_play():
 
             for watched_ats, title in session.exec(select(Movie.watched_at, Movie.title)).fetchall():
                 for watched_at in watched_ats:
-                    watched_at = datetime.fromisoformat(watched_at)
+                    watched_at = datetime.strptime(watched_at, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+                    # watched_at = datetime.fromisoformat(watched_at)
                     if watched_at > recent_play:
                         recent_play = watched_at
                         movie_title = title
@@ -89,7 +94,8 @@ def most_recent_play():
 
             for watched_ats, show_title_, season_, episode_, episode_title_ in session.exec(select(Episode.watched_at, Episode.show_title, Episode.season, Episode.episode, Episode.episode_title)).fetchall():
                 for watched_at in watched_ats:
-                    watched_at = datetime.fromisoformat(watched_at)
+                    watched_at = datetime.strptime(watched_at, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+                    # watched_at = datetime.fromisoformat(watched_at)
                     if watched_at > recent_play:
                         recent_play = watched_at
                         show_title = show_title_

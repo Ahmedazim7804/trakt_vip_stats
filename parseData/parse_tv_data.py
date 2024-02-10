@@ -24,7 +24,8 @@ def time_of_oldest_watched_episode():
 
         for watched_ats in session.exec(select(Episode.watched_at)).fetchall():
             for watched_at in watched_ats:
-                watched_at = datetime.fromisoformat(watched_at)
+                watched_at = datetime.strptime(watched_at, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+                # watched_at = datetime.fromisoformat(watched_at)
                 if watched_at < earliest:
                     earliest = watched_at
     
@@ -84,7 +85,8 @@ def plays_by_time():
     with Session(engine) as session:
         for watched_ats in session.exec(select(Episode.watched_at)).fetchall():
             for watched_at in watched_ats:
-                time = datetime.fromisoformat(watched_at)
+                time = datetime.strptime(watched_at, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+                # time = datetime.fromisoformat(watched_at)
 
                 year = time.year
                 month = time.strftime("%b")

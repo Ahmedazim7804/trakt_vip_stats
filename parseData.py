@@ -15,7 +15,8 @@ def first_play():
         for movie in movies:
             title, watched_ats = movie
             for watched_at in watched_ats:
-                watched_at = datetime.fromisoformat(watched_at)
+                # watched_at = datetime.fromisoformat(watched_at)
+                watched_at = datetime.strptime(watched_at, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
                 if watched_at < earliest:
                     earliest = watched_at
                     movie_name = title
